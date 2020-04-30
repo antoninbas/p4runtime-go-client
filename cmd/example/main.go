@@ -1,0 +1,96 @@
+package main
+
+import (
+	"context"
+	"flag"
+	"time"
+
+	log "github.com/sirupsen/logrus"
+	"google.golang.org/grpc"
+
+	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
+
+	"github.com/antoninbas/p4runtime-go-client/pkg/client"
+	"github.com/antoninbas/p4runtime-go-client/pkg/signals"
+)
+
+const (
+	defaultAddr     = "127.0.0.1:50051"
+	defaultDeviceID = 0
+)
+
+func main() {
+	var addr string
+	flag.StringVar(&addr, "addr", defaultAddr, "P4Runtime server socket")
+	var deviceID uint64
+	flag.Uint64Var(&deviceID, "device-id", defaultDeviceID, "Device id")
+	var binPath string
+	flag.StringVar(&binPath, "bin", "", "Path to P4 bin")
+	var p4infoPath string
+	flag.StringVar(&p4infoPath, "p4info", "", "Path to P4Info")
+
+	flag.Parse()
+
+	if binPath == "" || p4infoPath == "" {
+		log.Fatalf("Missing .bin or P4Info")
+	}
+
+	log.Infof("Connecting to server at %s", addr)
+	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("Cannot connect to server: %v", err)
+	}
+	defer conn.Close()
+
+	c := p4_v1.NewP4RuntimeClient(conn)
+	resp, err := c.Capabilities(context.Background(), &p4_v1.CapabilitiesRequest{})
+	if err != nil {
+		log.Fatalf("Error in Capabilities RPC: %v", err)
+	}
+	log.Infof("P4Runtime server version is %s", resp.P4RuntimeApiVersion)
+
+	stopCh := signals.RegisterSignalHandlers()
+
+	electionID := p4_v1.Uint128{High: 0, Low: 1}
+
+	p4RtC := client.NewClient(c, deviceID, electionID)
+	mastershipCh := make(chan bool)
+	go p4RtC.Run(stopCh, mastershipCh)
+
+	waitCh := make(chan struct{})
+
+	go func() {
+		sent := false
+		for isMaster := range mastershipCh {
+			if isMaster {
+				log.Infof("We are master!")
+				if !sent {
+					waitCh <- struct{}{}
+					sent = true
+				}
+			} else {
+				log.Infof("We are not master!")
+			}
+		}
+	}()
+
+	timeout := 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	select {
+	case <-ctx.Done():
+		log.Fatalf("Could not acquire mastership within %v", timeout)
+	case <-waitCh:
+	}
+
+	log.Info("Setting forwarding pipe")
+	if err := p4RtC.SetFwdPipe(binPath, p4infoPath); err != nil {
+		log.Fatalf("Error when setting forwarding pipe: %v", err)
+	}
+
+	// this is where we install entries
+
+	log.Info("Do Ctrl-C to quit")
+	<-stopCh
+	log.Info("Stopping client")
+}
