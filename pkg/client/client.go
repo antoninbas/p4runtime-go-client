@@ -14,9 +14,10 @@ import (
 
 type Client struct {
 	p4_v1.P4RuntimeClient
-	deviceID   uint64
-	electionID p4_v1.Uint128
-	p4Info     *p4_config_v1.P4Info
+	deviceID     uint64
+	electionID   p4_v1.Uint128
+	p4Info       *p4_config_v1.P4Info
+	streamSendCh chan *p4_v1.StreamMessageRequest
 }
 
 func NewClient(p4RuntimeClient p4_v1.P4RuntimeClient, deviceID uint64, electionID p4_v1.Uint128) *Client {
@@ -24,10 +25,15 @@ func NewClient(p4RuntimeClient p4_v1.P4RuntimeClient, deviceID uint64, electionI
 		P4RuntimeClient: p4RuntimeClient,
 		deviceID:        deviceID,
 		electionID:      electionID,
+		streamSendCh:    make(chan *p4_v1.StreamMessageRequest, 1000), // TODO: should be configurable
 	}
 }
 
-func (c *Client) Run(stopCh <-chan struct{}, mastershipCh chan<- bool) error {
+func (c *Client) Run(
+	stopCh <-chan struct{},
+	mastershipCh chan<- bool,
+	messageCh chan<- *p4_v1.StreamMessageResponse, // all other stream messages besides arbitration
+) error {
 	stream, err := c.StreamChannel(context.Background())
 	if err != nil {
 		return fmt.Errorf("cannot establish stream: %v", err)
@@ -47,7 +53,7 @@ func (c *Client) Run(stopCh <-chan struct{}, mastershipCh chan<- bool) error {
 			}
 			arbitration, ok := in.Update.(*p4_v1.StreamMessageResponse_Arbitration)
 			if !ok {
-				// do not do anything with the message
+				messageCh <- in
 				continue
 			}
 			if arbitration.Arbitration.Status.Code != int32(code.Code_OK) {
@@ -69,7 +75,15 @@ func (c *Client) Run(stopCh <-chan struct{}, mastershipCh chan<- bool) error {
 		}},
 	})
 
-	<-stopCh
+	for {
+		select {
+		case m := <-c.streamSendCh:
+			stream.Send(m)
+		case <-stopCh:
+			break
+		}
+	}
+
 	return nil
 }
 

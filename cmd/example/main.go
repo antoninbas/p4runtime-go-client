@@ -55,7 +55,7 @@ func main() {
 
 	p4RtC := client.NewClient(c, deviceID, electionID)
 	mastershipCh := make(chan bool)
-	go p4RtC.Run(stopCh, mastershipCh)
+	go p4RtC.Run(stopCh, mastershipCh, nil)
 
 	waitCh := make(chan struct{})
 

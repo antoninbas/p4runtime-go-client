@@ -1,6 +1,8 @@
 package client
 
 import (
+	"time"
+
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
 
@@ -54,44 +56,83 @@ func (m *LpmMatch) get(ID uint32) *p4_v1.FieldMatch {
 	return mf
 }
 
-func (c *Client) InsertTableEntry(table string, action string, mfs []MatchInterface, params [][]byte) error {
+type TableEntryOptions struct {
+	IdleTimeout time.Duration
+}
+
+// for default entries: to set use nil for mfs, to unset use nil for mfs and an
+// empty string for action
+func (c *Client) NewTableEntry(
+	table string,
+	action string,
+	mfs []MatchInterface,
+	params [][]byte,
+	options *TableEntryOptions,
+) *p4_v1.TableEntry {
 	tableID := c.tableId(table)
-	actionID := c.actionId(action)
-
-	directAction := &p4_v1.Action{
-		ActionId: actionID,
-	}
-
-	for idx, p := range params {
-		param := &p4_v1.Action_Param{
-			ParamId: uint32(idx + 1),
-			Value:   p,
-		}
-		directAction.Params = append(directAction.Params, param)
-	}
-
-	tableAction := &p4_v1.TableAction{
-		Type: &p4_v1.TableAction_Action{directAction},
-	}
 
 	entry := &p4_v1.TableEntry{
 		TableId:         tableID,
-		Action:          tableAction,
 		IsDefaultAction: (mfs == nil),
+	}
+
+	if action != "" {
+		actionID := c.actionId(action)
+		directAction := &p4_v1.Action{
+			ActionId: actionID,
+		}
+
+		for idx, p := range params {
+			param := &p4_v1.Action_Param{
+				ParamId: uint32(idx + 1),
+				Value:   p,
+			}
+			directAction.Params = append(directAction.Params, param)
+		}
+
+		tableAction := &p4_v1.TableAction{
+			Type: &p4_v1.TableAction_Action{directAction},
+		}
+
+		entry.Action = tableAction
 	}
 
 	for idx, mf := range mfs {
 		entry.Match = append(entry.Match, mf.get(uint32(idx+1)))
 	}
 
-	var updateType p4_v1.Update_Type
-	if mfs == nil {
-		updateType = p4_v1.Update_MODIFY
-	} else {
-		updateType = p4_v1.Update_INSERT
+	if options != nil {
+		entry.IdleTimeoutNs = options.IdleTimeout.Nanoseconds()
 	}
+
+	return entry
+}
+
+func (c *Client) InsertTableEntry(entry *p4_v1.TableEntry) error {
 	update := &p4_v1.Update{
-		Type: updateType,
+		Type: p4_v1.Update_INSERT,
+		Entity: &p4_v1.Entity{
+			Entity: &p4_v1.Entity_TableEntry{entry},
+		},
+	}
+
+	return c.WriteUpdate(update)
+}
+
+func (c *Client) ModifyTableEntry(entry *p4_v1.TableEntry) error {
+	update := &p4_v1.Update{
+		Type: p4_v1.Update_MODIFY,
+		Entity: &p4_v1.Entity{
+			Entity: &p4_v1.Entity_TableEntry{entry},
+		},
+	}
+
+	return c.WriteUpdate(update)
+}
+
+func (c *Client) DeleteTableEntry(entry *p4_v1.TableEntry) error {
+	update := &p4_v1.Update{
+		Type: p4_v1.Update_DELETE,
 		Entity: &p4_v1.Entity{
 			Entity: &p4_v1.Entity_TableEntry{entry},
 		},
