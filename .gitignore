@@ -15,3 +15,8 @@ bin/
 
 # Emacs save files
 *~
+
+# Utility binaries used by build system
+.bins
+
+*.pyc

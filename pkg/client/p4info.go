@@ -25,3 +25,15 @@ func (c *Client) actionId(name string) uint32 {
 	}
 	return invalidID
 }
+
+func (c *Client) digestId(name string) uint32 {
+	if c.p4Info == nil {
+		return invalidID
+	}
+	for _, digest := range c.p4Info.Digests {
+		if digest.Preamble.Name == name {
+			return digest.Preamble.Id
+		}
+	}
+	return invalidID
+}
