@@ -29,4 +29,7 @@ After that you can run `./bin/l2_switch`:
 ./bin/l2_switch --verbose
 ```
 
-and use the `pingall` command in the Mininet CLI to check connectivity.
+**Running in 'verbose' will log messages whenever new MAC addresses are learnt
+  and also dump port counters (ingress and egress) periodically.**
+
+Finally, use the `pingall` command in the Mininet CLI to check connectivity.

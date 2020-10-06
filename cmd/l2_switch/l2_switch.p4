@@ -30,10 +30,15 @@ parser ParserImpl(packet_in packet, out headers hdr, inout metadata meta, inout 
     }
 }
 
+counter<PortId_t>(512, CounterType.packets) igPortsCounts;
+counter<PortId_t>(512, CounterType.packets) egPortsCounts;
+
 control EgressImpl(inout headers hdr, inout metadata meta, inout standard_metadata_t standard_metadata) {
     apply {
         if (standard_metadata.egress_port == standard_metadata.ingress_port) {
             mark_to_drop(standard_metadata);
+        } else {
+            egPortsCounts.count(standard_metadata.egress_port);
         }
     }
 }
@@ -81,6 +86,7 @@ control IngressImpl(inout headers hdr, inout metadata meta, inout standard_metad
         size = 4096;
     }
     apply {
+        igPortsCounts.count(standard_metadata.ingress_port);
         smac.apply();
         dmac.apply();
     }

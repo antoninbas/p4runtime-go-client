@@ -1,5 +1,9 @@
 package client
 
+import (
+	p4_config_v1 "github.com/p4lang/p4runtime/go/p4/config/v1"
+)
+
 const invalidID = 0
 
 func (c *Client) tableId(name string) uint32 {
@@ -36,4 +40,24 @@ func (c *Client) digestId(name string) uint32 {
 		}
 	}
 	return invalidID
+}
+
+func (c *Client) findCounter(name string) *p4_config_v1.Counter {
+	if c.p4Info == nil {
+		return nil
+	}
+	for _, counter := range c.p4Info.Counters {
+		if counter.Preamble.Name == name {
+			return counter
+		}
+	}
+	return nil
+}
+
+func (c *Client) counterId(name string) uint32 {
+	counter := c.findCounter(name)
+	if counter == nil {
+		return invalidID
+	}
+	return counter.Preamble.Id
 }
