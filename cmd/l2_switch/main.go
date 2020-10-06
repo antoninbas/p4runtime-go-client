@@ -150,6 +150,53 @@ func handleStreamMessages(p4RtC *client.Client, messageCh <-chan *p4_v1.StreamMe
 	}
 }
 
+func printPortCounters(p4RtC *client.Client, ports []uint32, period time.Duration, stopCh <-chan struct{}) {
+	ticker := time.NewTicker(period)
+
+	printOne := func(name string) error {
+		counts, err := p4RtC.ReadCounterEntryWildcard(name)
+		if err != nil {
+			return fmt.Errorf("error when reading '%s' counters: %v", name, err)
+		}
+		values := make(map[uint32]int64, len(ports))
+		for _, p := range ports {
+			if p >= uint32(len(counts)) {
+				log.Errorf("Port %d is larger than counter size (%d)", p, len(counts))
+				continue
+			}
+			values[p] = counts[p].PacketCount
+		}
+		log.Debugf("%s: %v", name, values)
+		return nil
+	}
+
+	doPrint := func() error {
+		if err := printOne("igPortsCounts"); err != nil {
+			return err
+		}
+		if err := printOne("egPortsCounts"); err != nil {
+			return err
+		}
+		return nil
+	}
+
+	log.Infof("Printing port counters every %v", period)
+
+	go func() {
+		defer ticker.Stop()
+		for {
+			select {
+			case <-stopCh:
+				return
+			case <-ticker.C:
+				if err := doPrint(); err != nil {
+					log.Errorf("Error when printing port counters: %v", err)
+				}
+			}
+		}
+	}()
+}
+
 func main() {
 	var addr string
 	flag.StringVar(&addr, "addr", defaultAddr, "P4Runtime server socket")
@@ -258,6 +305,10 @@ func main() {
 			log.Errorf("Error during cleanup: %v", err)
 		}
 	}()
+
+	if verbose {
+		printPortCounters(p4RtC, ports, 10*time.Second, stopCh)
+	}
 
 	log.Info("Do Ctrl-C to quit")
 	<-stopCh

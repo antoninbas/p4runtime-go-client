@@ -96,3 +96,64 @@ func (c *Client) WriteUpdate(update *p4_v1.Update) error {
 	_, err := c.Write(context.Background(), req)
 	return err
 }
+
+func (c *Client) ReadEntitySingle(entity *p4_v1.Entity) (*p4_v1.Entity, error) {
+	req := &p4_v1.ReadRequest{
+		DeviceId: c.deviceID,
+		Entities: []*p4_v1.Entity{entity},
+	}
+	stream, err := c.Read(context.TODO(), req)
+	if err != nil {
+		return nil, err
+	}
+	var readEntity *p4_v1.Entity
+	count := 0
+	for {
+		rep, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, err
+		}
+		for _, e := range rep.Entities {
+			count++
+			readEntity = e
+		}
+	}
+	if count == 0 {
+		return nil, fmt.Errorf("expected a single entity but got none")
+	}
+	if count > 1 {
+		return nil, fmt.Errorf("expected a single entity but got several")
+	}
+	return readEntity, nil
+}
+
+// ReadEntityWildcard will block and send all read entities on readEntityCh. It will close the
+// channel when the RPC completes and return any error that may have occurred.
+func (c *Client) ReadEntityWildcard(entity *p4_v1.Entity, readEntityCh chan<- *p4_v1.Entity) error {
+	defer close(readEntityCh)
+
+	req := &p4_v1.ReadRequest{
+		DeviceId: c.deviceID,
+		Entities: []*p4_v1.Entity{entity},
+	}
+	stream, err := c.Read(context.TODO(), req)
+	if err != nil {
+		return err
+	}
+	for {
+		rep, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+		for _, e := range rep.Entities {
+			readEntityCh <- e
+		}
+	}
+	return nil
+}
