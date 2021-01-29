@@ -12,6 +12,10 @@ import (
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
 
+const (
+	P4RuntimePort = 9559
+)
+
 type Client struct {
 	p4_v1.P4RuntimeClient
 	deviceID     uint64

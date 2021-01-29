@@ -20,11 +20,14 @@ import (
 )
 
 const (
-	defaultAddr     = "127.0.0.1:50051"
 	defaultDeviceID = 0
 	mgrp            = 0xab
 	macTimeout      = 10 * time.Second
 	defaultPorts    = "0,1,2,3,4,5,6,7"
+)
+
+var (
+	defaultAddr = fmt.Sprintf("127.0.0.1:%d", client.P4RuntimePort)
 )
 
 func portsToSlice(ports string) ([]uint32, error) {
@@ -71,7 +74,7 @@ func initialize(p4RtC *client.Client, ports []uint32) error {
 func cleanup(p4RtC *client.Client) error {
 	// necessary because of https://github.com/p4lang/behavioral-model/issues/891
 	if err := p4RtC.DeleteMulticastGroup(mgrp); err != nil {
-		return fmt.Errorf("Cannot delete multicast group %d: %v", err)
+		return fmt.Errorf("Cannot delete multicast group %d: %v", mgrp, err)
 	}
 	return nil
 }
