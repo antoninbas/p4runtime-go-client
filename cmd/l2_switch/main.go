@@ -281,24 +281,24 @@ func main() {
 	electionID := p4_v1.Uint128{High: 0, Low: 1}
 
 	p4RtC := client.NewClient(c, deviceID, electionID)
-	mastershipCh := make(chan bool)
+	arbitrationCh := make(chan bool)
 	messageCh := make(chan *p4_v1.StreamMessageResponse, 1000)
 	defer close(messageCh)
-	go p4RtC.Run(stopCh, mastershipCh, messageCh)
+	go p4RtC.Run(stopCh, arbitrationCh, messageCh)
 
 	waitCh := make(chan struct{})
 
 	go func() {
 		sent := false
-		for isMaster := range mastershipCh {
-			if isMaster {
-				log.Infof("We are master!")
+		for isPrimary := range arbitrationCh {
+			if isPrimary {
+				log.Infof("We are the primary client!")
 				if !sent {
 					waitCh <- struct{}{}
 					sent = true
 				}
 			} else {
-				log.Infof("We are not master!")
+				log.Infof("We are not the primary client!")
 			}
 		}
 	}()
@@ -311,7 +311,7 @@ func main() {
 	defer cancel()
 	select {
 	case <-ctx.Done():
-		log.Fatalf("Could not acquire mastership within %v", timeout)
+		log.Fatalf("Could not become the primary client within %v", timeout)
 	case <-waitCh:
 	}
 
