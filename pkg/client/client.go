@@ -35,7 +35,7 @@ func NewClient(p4RuntimeClient p4_v1.P4RuntimeClient, deviceID uint64, electionI
 
 func (c *Client) Run(
 	stopCh <-chan struct{},
-	mastershipCh chan<- bool,
+	arbitrationCh chan<- bool,
 	messageCh chan<- *p4_v1.StreamMessageResponse, // all other stream messages besides arbitration
 ) error {
 	stream, err := c.StreamChannel(context.Background())
@@ -61,12 +61,12 @@ func (c *Client) Run(
 				continue
 			}
 			if arbitration.Arbitration.Status.Code != int32(code.Code_OK) {
-				if mastershipCh != nil {
-					mastershipCh <- false
+				if arbitrationCh != nil {
+					arbitrationCh <- false
 				}
 			} else {
-				if mastershipCh != nil {
-					mastershipCh <- true
+				if arbitrationCh != nil {
+					arbitrationCh <- true
 				}
 			}
 		}
