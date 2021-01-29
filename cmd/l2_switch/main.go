@@ -64,7 +64,12 @@ func initialize(p4RtC *client.Client, ports []uint32) error {
 
 	log.Debugf("Setting default action for 'dmac' table to 'broadcast'")
 	mgrpBytes, _ := conversion.UInt32ToBinary(mgrp, 2)
-	dmacEntry := p4RtC.NewTableEntry("IngressImpl.dmac", "IngressImpl.broadcast", nil, [][]byte{mgrpBytes}, nil)
+	dmacEntry := p4RtC.NewTableEntry(
+		"IngressImpl.dmac",
+		nil,
+		p4RtC.NewTableActionDirect("IngressImpl.broadcast", [][]byte{mgrpBytes}),
+		nil,
+	)
 	if err := p4RtC.ModifyTableEntry(dmacEntry); err != nil {
 		return fmt.Errorf("Cannot set default action for 'dmac': %v", err)
 	}
@@ -93,12 +98,22 @@ func learnMacs(p4RtC *client.Client, digestList *p4_v1.DigestList) error {
 			IdleTimeout: macTimeout,
 		}
 
-		smacEntry := p4RtC.NewTableEntry("IngressImpl.smac", "NoAction", []client.MatchInterface{&client.ExactMatch{srcAddr}}, nil, smacOptions)
+		smacEntry := p4RtC.NewTableEntry(
+			"IngressImpl.smac",
+			[]client.MatchInterface{&client.ExactMatch{srcAddr}},
+			p4RtC.NewTableActionDirect("NoAction", nil),
+			smacOptions,
+		)
 		if err := p4RtC.InsertTableEntry(smacEntry); err != nil {
 			log.Errorf("Cannot insert entry in 'smac': %v", err)
 		}
 
-		dmacEntry := p4RtC.NewTableEntry("IngressImpl.dmac", "IngressImpl.fwd", []client.MatchInterface{&client.ExactMatch{srcAddr}}, [][]byte{ingressPort}, nil)
+		dmacEntry := p4RtC.NewTableEntry(
+			"IngressImpl.dmac",
+			[]client.MatchInterface{&client.ExactMatch{srcAddr}},
+			p4RtC.NewTableActionDirect("IngressImpl.fwd", [][]byte{ingressPort}),
+			nil,
+		)
 		if err := p4RtC.InsertTableEntry(dmacEntry); err != nil {
 			log.Errorf("Cannot insert entry in 'dmac': %v", err)
 		}
@@ -121,7 +136,12 @@ func forgetEntries(p4RtC *client.Client, notification *p4_v1.IdleTimeoutNotifica
 		// first delete from the dmac table, then enable learning again for that MAC by
 		// deleting from the smac table.
 
-		dmacEntry := p4RtC.NewTableEntry("IngressImpl.dmac", "", []client.MatchInterface{&client.ExactMatch{srcAddr}}, nil, nil)
+		dmacEntry := p4RtC.NewTableEntry(
+			"IngressImpl.dmac",
+			[]client.MatchInterface{&client.ExactMatch{srcAddr}},
+			nil,
+			nil,
+		)
 		if err := p4RtC.DeleteTableEntry(dmacEntry); err != nil {
 			log.Errorf("Cannot delete entry from 'dmac': %v", err)
 		}
