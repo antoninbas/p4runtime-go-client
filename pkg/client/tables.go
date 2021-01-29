@@ -60,13 +60,34 @@ type TableEntryOptions struct {
 	IdleTimeout time.Duration
 }
 
-// for default entries: to set use nil for mfs, to unset use nil for mfs and an
-// empty string for action
+func (c *Client) NewTableActionDirect(
+	action string,
+	params [][]byte,
+) *p4_v1.TableAction {
+	actionID := c.actionId(action)
+	directAction := &p4_v1.Action{
+		ActionId: actionID,
+	}
+
+	for idx, p := range params {
+		param := &p4_v1.Action_Param{
+			ParamId: uint32(idx + 1),
+			Value:   p,
+		}
+		directAction.Params = append(directAction.Params, param)
+	}
+
+	return &p4_v1.TableAction{
+		Type: &p4_v1.TableAction_Action{directAction},
+	}
+}
+
+// for default entries: to set use nil for mfs, to unset use nil for mfs and nil
+// for action
 func (c *Client) NewTableEntry(
 	table string,
-	action string,
 	mfs []MatchInterface,
-	params [][]byte,
+	action *p4_v1.TableAction,
 	options *TableEntryOptions,
 ) *p4_v1.TableEntry {
 	tableID := c.tableId(table)
@@ -74,27 +95,7 @@ func (c *Client) NewTableEntry(
 	entry := &p4_v1.TableEntry{
 		TableId:         tableID,
 		IsDefaultAction: (mfs == nil),
-	}
-
-	if action != "" {
-		actionID := c.actionId(action)
-		directAction := &p4_v1.Action{
-			ActionId: actionID,
-		}
-
-		for idx, p := range params {
-			param := &p4_v1.Action_Param{
-				ParamId: uint32(idx + 1),
-				Value:   p,
-			}
-			directAction.Params = append(directAction.Params, param)
-		}
-
-		tableAction := &p4_v1.TableAction{
-			Type: &p4_v1.TableAction_Action{directAction},
-		}
-
-		entry.Action = tableAction
+		Action:          action,
 	}
 
 	for idx, mf := range mfs {
