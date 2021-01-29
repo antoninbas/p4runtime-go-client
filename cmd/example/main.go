@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -15,8 +16,11 @@ import (
 )
 
 const (
-	defaultAddr     = "127.0.0.1:50051"
 	defaultDeviceID = 0
+)
+
+var (
+	defaultAddr = fmt.Sprintf("127.0.0.1:%d", client.P4RuntimePort)
 )
 
 func main() {
