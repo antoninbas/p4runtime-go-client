@@ -27,3 +27,14 @@ func UInt32ToBinary(i uint32, numBytes int) ([]byte, error) {
 	binary.BigEndian.PutUint32(b, i)
 	return b[numBytes:], nil
 }
+
+func UInt32ToBinaryCompressed(i uint32) ([]byte, error) {
+	b := make([]byte, 4)
+	binary.BigEndian.PutUint32(b, i)
+	for idx := 0; idx < 4; idx++ {
+		if b[idx] != 0 {
+			return b[idx:], nil
+		}
+	}
+	return []byte{'\x00'}, nil
+}

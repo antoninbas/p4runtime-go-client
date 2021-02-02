@@ -60,10 +60,7 @@ type TableEntryOptions struct {
 	IdleTimeout time.Duration
 }
 
-func (c *Client) NewTableActionDirect(
-	action string,
-	params [][]byte,
-) *p4_v1.TableAction {
+func (c *Client) newAction(action string, params [][]byte) *p4_v1.Action {
 	actionID := c.actionId(action)
 	directAction := &p4_v1.Action{
 		ActionId: actionID,
@@ -77,9 +74,52 @@ func (c *Client) NewTableActionDirect(
 		directAction.Params = append(directAction.Params, param)
 	}
 
+	return directAction
+}
+
+func (c *Client) NewTableActionDirect(
+	action string,
+	params [][]byte,
+) *p4_v1.TableAction {
 	return &p4_v1.TableAction{
-		Type: &p4_v1.TableAction_Action{directAction},
+		Type: &p4_v1.TableAction_Action{c.newAction(action, params)},
 	}
+}
+
+type ActionProfileActionSet struct {
+	client *Client
+	action *p4_v1.TableAction
+}
+
+func (c *Client) NewActionProfileActionSet() *ActionProfileActionSet {
+	return &ActionProfileActionSet{
+		client: c,
+		action: &p4_v1.TableAction{
+			Type: &p4_v1.TableAction_ActionProfileActionSet{},
+		},
+	}
+}
+
+func (s *ActionProfileActionSet) AddAction(
+	action string,
+	params [][]byte,
+	weight int32,
+	port Port,
+) *ActionProfileActionSet {
+	actionSet := s.action.GetActionProfileActionSet()
+	actionSet.ActionProfileActions = append(
+		actionSet.ActionProfileActions,
+		&p4_v1.ActionProfileAction{
+			Action:    s.client.newAction(action, params),
+			Weight:    weight,
+			WatchKind: &p4_v1.ActionProfileAction_WatchPort{port.AsBytes()},
+		},
+	)
+	return s
+}
+
+func (s *ActionProfileActionSet) TableAction() *p4_v1.TableAction {
+	return s.action
 }
 
 // for default entries: to set use nil for mfs, to unset use nil for mfs and nil

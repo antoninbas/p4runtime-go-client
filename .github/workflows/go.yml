@@ -20,6 +20,9 @@ jobs:
     - name: Build binaries
       run: |
         make
+    - name: Run unit tests
+      run: |
+        make check
 
   tidy:
     runs-on: [ubuntu-latest]
