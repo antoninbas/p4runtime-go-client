@@ -95,7 +95,7 @@ func (c *Client) NewActionProfileActionSet() *ActionProfileActionSet {
 	return &ActionProfileActionSet{
 		client: c,
 		action: &p4_v1.TableAction{
-			Type: &p4_v1.TableAction_ActionProfileActionSet{},
+			Type: &p4_v1.TableAction_ActionProfileActionSet{&p4_v1.ActionProfileActionSet{}},
 		},
 	}
 }
