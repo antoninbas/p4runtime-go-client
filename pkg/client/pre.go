@@ -18,7 +18,7 @@ func (c *Client) InsertMulticastGroup(mgid uint32, ports []uint32) error {
 
 	preEntry := &p4_v1.PacketReplicationEngineEntry{
 		Type: &p4_v1.PacketReplicationEngineEntry_MulticastGroupEntry{
-			entry,
+			MulticastGroupEntry: entry,
 		},
 	}
 
@@ -27,7 +27,9 @@ func (c *Client) InsertMulticastGroup(mgid uint32, ports []uint32) error {
 	update := &p4_v1.Update{
 		Type: updateType,
 		Entity: &p4_v1.Entity{
-			Entity: &p4_v1.Entity_PacketReplicationEngineEntry{preEntry},
+			Entity: &p4_v1.Entity_PacketReplicationEngineEntry{
+				PacketReplicationEngineEntry: preEntry,
+			},
 		},
 	}
 
@@ -41,7 +43,7 @@ func (c *Client) DeleteMulticastGroup(mgid uint32) error {
 
 	preEntry := &p4_v1.PacketReplicationEngineEntry{
 		Type: &p4_v1.PacketReplicationEngineEntry_MulticastGroupEntry{
-			entry,
+			MulticastGroupEntry: entry,
 		},
 	}
 
@@ -50,7 +52,9 @@ func (c *Client) DeleteMulticastGroup(mgid uint32) error {
 	update := &p4_v1.Update{
 		Type: updateType,
 		Entity: &p4_v1.Entity{
-			Entity: &p4_v1.Entity_PacketReplicationEngineEntry{preEntry},
+			Entity: &p4_v1.Entity_PacketReplicationEngineEntry{
+				PacketReplicationEngineEntry: preEntry,
+			},
 		},
 	}
 

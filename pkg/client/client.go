@@ -73,7 +73,7 @@ func (c *Client) Run(
 	}()
 
 	stream.Send(&p4_v1.StreamMessageRequest{
-		Update: &p4_v1.StreamMessageRequest_Arbitration{&p4_v1.MasterArbitrationUpdate{
+		Update: &p4_v1.StreamMessageRequest_Arbitration{Arbitration: &p4_v1.MasterArbitrationUpdate{
 			DeviceId:   c.deviceID,
 			ElectionId: &c.electionID,
 		}},

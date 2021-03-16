@@ -20,7 +20,7 @@ func (m *ExactMatch) get(ID uint32) *p4_v1.FieldMatch {
 	}
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
-		FieldMatchType: &p4_v1.FieldMatch_Exact_{exact},
+		FieldMatchType: &p4_v1.FieldMatch_Exact_{Exact: exact},
 	}
 	return mf
 }
@@ -51,7 +51,7 @@ func (m *LpmMatch) get(ID uint32) *p4_v1.FieldMatch {
 
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
-		FieldMatchType: &p4_v1.FieldMatch_Lpm{lpm},
+		FieldMatchType: &p4_v1.FieldMatch_Lpm{Lpm: lpm},
 	}
 	return mf
 }
@@ -68,7 +68,7 @@ func (m *TernaryMatch) get(ID uint32) *p4_v1.FieldMatch {
 	}
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
-		FieldMatchType: &p4_v1.FieldMatch_Ternary_{ternary},
+		FieldMatchType: &p4_v1.FieldMatch_Ternary_{Ternary: ternary},
 	}
 	return mf
 }
@@ -86,7 +86,7 @@ func (m *RangeMatch) get(ID uint32) *p4_v1.FieldMatch {
 
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
-		FieldMatchType: &p4_v1.FieldMatch_Range_{fmRange},
+		FieldMatchType: &p4_v1.FieldMatch_Range_{Range: fmRange},
 	}
 	return mf
 }
@@ -102,7 +102,7 @@ func (m *OptionalMatch) get(ID uint32) *p4_v1.FieldMatch {
 
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
-		FieldMatchType: &p4_v1.FieldMatch_Optional_{optional},
+		FieldMatchType: &p4_v1.FieldMatch_Optional_{Optional: optional},
 	}
 	return mf
 }
@@ -133,7 +133,7 @@ func (c *Client) NewTableActionDirect(
 	params [][]byte,
 ) *p4_v1.TableAction {
 	return &p4_v1.TableAction{
-		Type: &p4_v1.TableAction_Action{c.newAction(action, params)},
+		Type: &p4_v1.TableAction_Action{Action: c.newAction(action, params)},
 	}
 }
 
@@ -146,7 +146,9 @@ func (c *Client) NewActionProfileActionSet() *ActionProfileActionSet {
 	return &ActionProfileActionSet{
 		client: c,
 		action: &p4_v1.TableAction{
-			Type: &p4_v1.TableAction_ActionProfileActionSet{&p4_v1.ActionProfileActionSet{}},
+			Type: &p4_v1.TableAction_ActionProfileActionSet{
+				ActionProfileActionSet: &p4_v1.ActionProfileActionSet{},
+			},
 		},
 	}
 }
@@ -161,9 +163,11 @@ func (s *ActionProfileActionSet) AddAction(
 	actionSet.ActionProfileActions = append(
 		actionSet.ActionProfileActions,
 		&p4_v1.ActionProfileAction{
-			Action:    s.client.newAction(action, params),
-			Weight:    weight,
-			WatchKind: &p4_v1.ActionProfileAction_WatchPort{port.AsBytes()},
+			Action: s.client.newAction(action, params),
+			Weight: weight,
+			WatchKind: &p4_v1.ActionProfileAction_WatchPort{
+				WatchPort: port.AsBytes(),
+			},
 		},
 	)
 	return s
@@ -204,7 +208,7 @@ func (c *Client) InsertTableEntry(entry *p4_v1.TableEntry) error {
 	update := &p4_v1.Update{
 		Type: p4_v1.Update_INSERT,
 		Entity: &p4_v1.Entity{
-			Entity: &p4_v1.Entity_TableEntry{entry},
+			Entity: &p4_v1.Entity_TableEntry{TableEntry: entry},
 		},
 	}
 
@@ -215,7 +219,7 @@ func (c *Client) ModifyTableEntry(entry *p4_v1.TableEntry) error {
 	update := &p4_v1.Update{
 		Type: p4_v1.Update_MODIFY,
 		Entity: &p4_v1.Entity{
-			Entity: &p4_v1.Entity_TableEntry{entry},
+			Entity: &p4_v1.Entity_TableEntry{TableEntry: entry},
 		},
 	}
 
@@ -226,7 +230,7 @@ func (c *Client) DeleteTableEntry(entry *p4_v1.TableEntry) error {
 	update := &p4_v1.Update{
 		Type: p4_v1.Update_DELETE,
 		Entity: &p4_v1.Entity{
-			Entity: &p4_v1.Entity_TableEntry{entry},
+			Entity: &p4_v1.Entity_TableEntry{TableEntry: entry},
 		},
 	}
 

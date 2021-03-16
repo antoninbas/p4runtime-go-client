@@ -17,7 +17,7 @@ func (c *Client) ModifyCounterEntry(counter string, index int64, data *p4_v1.Cou
 	update := &p4_v1.Update{
 		Type: p4_v1.Update_MODIFY,
 		Entity: &p4_v1.Entity{
-			Entity: &p4_v1.Entity_CounterEntry{entry},
+			Entity: &p4_v1.Entity_CounterEntry{CounterEntry: entry},
 		},
 	}
 	return c.WriteUpdate(update)
@@ -30,7 +30,7 @@ func (c *Client) ReadCounterEntry(counter string, index int64) (*p4_v1.CounterDa
 		Index:     &p4_v1.Index{Index: index},
 	}
 	readEntity, err := c.ReadEntitySingle(&p4_v1.Entity{
-		Entity: &p4_v1.Entity_CounterEntry{entry},
+		Entity: &p4_v1.Entity_CounterEntry{CounterEntry: entry},
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error when reading counter entry: %v", err)
@@ -63,7 +63,7 @@ func (c *Client) ReadCounterEntryWildcard(counter string) ([]*p4_v1.CounterData,
 		}
 	}()
 	if err := c.ReadEntityWildcard(&p4_v1.Entity{
-		Entity: &p4_v1.Entity_CounterEntry{entry},
+		Entity: &p4_v1.Entity_CounterEntry{CounterEntry: entry},
 	}, readEntityCh); err != nil {
 		return nil, fmt.Errorf("error when reading counter entries: %v", err)
 	}
