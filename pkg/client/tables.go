@@ -56,6 +56,57 @@ func (m *LpmMatch) get(ID uint32) *p4_v1.FieldMatch {
 	return mf
 }
 
+type TernaryMatch struct {
+	Value []byte
+	Mask  []byte
+}
+
+func (m *TernaryMatch) get(ID uint32) *p4_v1.FieldMatch {
+	ternary := &p4_v1.FieldMatch_Ternary{
+		Value: m.Value,
+		Mask:  m.Mask,
+	}
+	mf := &p4_v1.FieldMatch{
+		FieldId:        ID,
+		FieldMatchType: &p4_v1.FieldMatch_Ternary_{ternary},
+	}
+	return mf
+}
+
+type RangeMatch struct {
+	Low  []byte
+	High []byte
+}
+
+func (m *RangeMatch) get(ID uint32) *p4_v1.FieldMatch {
+	fmRange := &p4_v1.FieldMatch_Range{
+		Low:  m.Low,
+		High: m.High,
+	}
+
+	mf := &p4_v1.FieldMatch{
+		FieldId:        ID,
+		FieldMatchType: &p4_v1.FieldMatch_Range_{fmRange},
+	}
+	return mf
+}
+
+type OptionalMatch struct {
+	Value []byte
+}
+
+func (m *OptionalMatch) get(ID uint32) *p4_v1.FieldMatch {
+	optional := &p4_v1.FieldMatch_Optional{
+		Value: m.Value,
+	}
+
+	mf := &p4_v1.FieldMatch{
+		FieldId:        ID,
+		FieldMatchType: &p4_v1.FieldMatch_Optional_{optional},
+	}
+	return mf
+}
+
 type TableEntryOptions struct {
 	IdleTimeout time.Duration
 }
