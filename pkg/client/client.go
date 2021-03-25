@@ -16,7 +16,20 @@ const (
 	P4RuntimePort = 9559
 )
 
+type ClientOptions struct {
+	CanonicalBytestrings bool
+}
+
+var defaultClientOptions = ClientOptions{
+	CanonicalBytestrings: true,
+}
+
+func DisableCanonicalBytestrings(options *ClientOptions) {
+	options.CanonicalBytestrings = false
+}
+
 type Client struct {
+	ClientOptions
 	p4_v1.P4RuntimeClient
 	deviceID     uint64
 	electionID   p4_v1.Uint128
@@ -24,8 +37,18 @@ type Client struct {
 	streamSendCh chan *p4_v1.StreamMessageRequest
 }
 
-func NewClient(p4RuntimeClient p4_v1.P4RuntimeClient, deviceID uint64, electionID p4_v1.Uint128) *Client {
+func NewClient(
+	p4RuntimeClient p4_v1.P4RuntimeClient,
+	deviceID uint64,
+	electionID p4_v1.Uint128,
+	optionsModifierFns ...func(*ClientOptions),
+) *Client {
+	options := defaultClientOptions
+	for _, fn := range optionsModifierFns {
+		fn(&options)
+	}
 	return &Client{
+		ClientOptions:   options,
 		P4RuntimeClient: p4RuntimeClient,
 		deviceID:        deviceID,
 		electionID:      electionID,
