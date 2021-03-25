@@ -17,6 +17,11 @@ l2_switch: .bins/go-bindata .bins/p4c-lite.sh
 	./.bins/p4c-lite.sh --pull $(CURDIR)/cmd/l2_switch/l2_switch.p4 -o $(CURDIR)/cmd/l2_switch/l2_switch.out/
 	./.bins/go-bindata -o $(CURDIR)/cmd/l2_switch/l2_switch_data.go cmd/l2_switch/l2_switch.out
 
+wcmp: .bins/go-bindata .bins/p4c-lite.sh
+	@mkdir -p $(CURDIR)/cmd/wcmp/wcmp.out
+	./.bins/p4c-lite.sh --pull $(CURDIR)/cmd/wcmp/wcmp.p4 -o $(CURDIR)/cmd/wcmp/wcmp.out/
+	./.bins/go-bindata -o $(CURDIR)/cmd/wcmp/wcmp_data.go cmd/wcmp/wcmp.out
+
 .PHONY: bin
 bin:
 	GOBIN=$(BINDIR) $(GO) install github.com/antoninbas/p4runtime-go-client/...

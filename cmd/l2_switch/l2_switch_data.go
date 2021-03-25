@@ -95,7 +95,7 @@ func cmdL2_switchL2_switchOutL2_switchJson() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "cmd/l2_switch/l2_switch.out/l2_switch.json", size: 17142, mode: os.FileMode(420), modTime: time.Unix(1601949088, 0)}
+	info := bindataFileInfo{name: "cmd/l2_switch/l2_switch.out/l2_switch.json", size: 17142, mode: os.FileMode(420), modTime: time.Unix(1612328066, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -115,7 +115,7 @@ func cmdL2_switchL2_switchOutL2_switchP4i() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "cmd/l2_switch/l2_switch.out/l2_switch.p4i", size: 36277, mode: os.FileMode(420), modTime: time.Unix(1601949087, 0)}
+	info := bindataFileInfo{name: "cmd/l2_switch/l2_switch.out/l2_switch.p4i", size: 36277, mode: os.FileMode(420), modTime: time.Unix(1612328065, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
@@ -135,7 +135,7 @@ func cmdL2_switchL2_switchOutP4infoPbTxt() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "cmd/l2_switch/l2_switch.out/p4info.pb.txt", size: 2197, mode: os.FileMode(420), modTime: time.Unix(1601949088, 0)}
+	info := bindataFileInfo{name: "cmd/l2_switch/l2_switch.out/p4info.pb.txt", size: 2197, mode: os.FileMode(420), modTime: time.Unix(1612328065, 0)}
 	a := &asset{bytes: bytes, info: info}
 	return a, nil
 }
