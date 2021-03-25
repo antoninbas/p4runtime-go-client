@@ -4,19 +4,29 @@ import (
 	"time"
 
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
+
+	"github.com/antoninbas/p4runtime-go-client/pkg/util/conversion"
 )
 
+func ToCanonicalIf(v []byte, cond bool) []byte {
+	if cond {
+		return conversion.ToCanonicalBytestring(v)
+	} else {
+		return v
+	}
+}
+
 type MatchInterface interface {
-	get(ID uint32) *p4_v1.FieldMatch
+	get(ID uint32, canonical bool) *p4_v1.FieldMatch
 }
 
 type ExactMatch struct {
 	Value []byte
 }
 
-func (m *ExactMatch) get(ID uint32) *p4_v1.FieldMatch {
+func (m *ExactMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 	exact := &p4_v1.FieldMatch_Exact{
-		Value: m.Value,
+		Value: ToCanonicalIf(m.Value, canonical),
 	}
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
@@ -30,24 +40,25 @@ type LpmMatch struct {
 	PLen  int32
 }
 
-func (m *LpmMatch) get(ID uint32) *p4_v1.FieldMatch {
+func (m *LpmMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 	lpm := &p4_v1.FieldMatch_LPM{
 		Value:     m.Value,
 		PrefixLen: m.PLen,
 	}
 
-	// P4Runtime now has strict rules regarding ternary matches: in the
-	// case of LPM, trailing bits in the value (after prefix) must be set
-	// to 0.
+	// P4Runtime has strict rules regarding ternary matches: in the case of
+	// LPM, trailing bits in the value (after prefix) must be set to 0.
 	firstByteMasked := int(m.PLen / 8)
-	if firstByteMasked != len(m.Value) {
+	if firstByteMasked != len(lpm.Value) {
 		i := firstByteMasked
 		r := m.PLen % 8
-		m.Value[i] = m.Value[i] & (0xff << (8 - r))
-		for i = i + 1; i < len(m.Value); i++ {
-			m.Value[i] = 0
+		lpm.Value[i] = lpm.Value[i] & (0xff << (8 - r))
+		for i = i + 1; i < len(lpm.Value); i++ {
+			lpm.Value[i] = 0
 		}
 	}
+
+	lpm.Value = ToCanonicalIf(lpm.Value, canonical)
 
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
@@ -61,11 +72,27 @@ type TernaryMatch struct {
 	Mask  []byte
 }
 
-func (m *TernaryMatch) get(ID uint32) *p4_v1.FieldMatch {
+func (m *TernaryMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 	ternary := &p4_v1.FieldMatch_Ternary{
 		Value: m.Value,
 		Mask:  m.Mask,
 	}
+
+	// P4Runtime has strict rules regarding ternary matches: masked off bits
+	// must be set to 0 in the value.
+	offset := len(ternary.Mask) - len(ternary.Value)
+	if offset < 0 {
+		ternary.Value = ternary.Value[-offset:]
+		offset = 0
+	}
+
+	for i, b := range ternary.Mask[offset:] {
+		ternary.Value[i] = ternary.Value[i] & b
+	}
+
+	ternary.Value = ToCanonicalIf(ternary.Value, canonical)
+	ternary.Mask = ToCanonicalIf(ternary.Mask, canonical)
+
 	mf := &p4_v1.FieldMatch{
 		FieldId:        ID,
 		FieldMatchType: &p4_v1.FieldMatch_Ternary_{Ternary: ternary},
@@ -78,10 +105,10 @@ type RangeMatch struct {
 	High []byte
 }
 
-func (m *RangeMatch) get(ID uint32) *p4_v1.FieldMatch {
+func (m *RangeMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 	fmRange := &p4_v1.FieldMatch_Range{
-		Low:  m.Low,
-		High: m.High,
+		Low:  ToCanonicalIf(m.Low, canonical),
+		High: ToCanonicalIf(m.High, canonical),
 	}
 
 	mf := &p4_v1.FieldMatch{
@@ -95,9 +122,9 @@ type OptionalMatch struct {
 	Value []byte
 }
 
-func (m *OptionalMatch) get(ID uint32) *p4_v1.FieldMatch {
+func (m *OptionalMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 	optional := &p4_v1.FieldMatch_Optional{
-		Value: m.Value,
+		Value: ToCanonicalIf(m.Value, canonical),
 	}
 
 	mf := &p4_v1.FieldMatch{
@@ -194,7 +221,7 @@ func (c *Client) NewTableEntry(
 	}
 
 	for idx, mf := range mfs {
-		entry.Match = append(entry.Match, mf.get(uint32(idx+1)))
+		entry.Match = append(entry.Match, mf.get(uint32(idx+1), c.CanonicalBytestrings))
 	}
 
 	if options != nil {
