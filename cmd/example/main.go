@@ -88,7 +88,7 @@ func main() {
 	}
 
 	log.Info("Setting forwarding pipe")
-	if err := p4RtC.SetFwdPipe(binPath, p4infoPath); err != nil {
+	if _, err := p4RtC.SetFwdPipe(binPath, p4infoPath, 0); err != nil {
 		log.Fatalf("Error when setting forwarding pipe: %v", err)
 	}
 
