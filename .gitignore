@@ -20,3 +20,6 @@ bin/
 .bins
 
 *.pyc
+
+# Go code linting program
+.golangci-bin

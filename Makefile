@@ -24,6 +24,7 @@ bin:
 clean:
 	rm -rf bin
 	rm -rf .bins
+	rm -rf .golangci-bin
 
 .PHONY: fmt
 fmt:
@@ -37,3 +38,18 @@ check-unit:
 .PHONY: check
 check:
 	$(GO) test -tags=integration github.com/antoninbas/p4runtime-go-client/...
+
+# code linting
+.golangci-bin:
+	@echo "===> Installing Golangci-lint <==="
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $@ v1.40.0
+
+.PHONY: golangci
+golangci: .golangci-bin
+	@echo "===> Running golangci <==="
+	@GOOS=linux .golangci-bin/golangci-lint run -c .golangci.yml
+
+.PHONY: golangci-fix
+golangci-fix: .golangci-bin
+	@echo "===> Running golangci-fix <==="
+	@GOOS=linux .golangci-bin/golangci-lint run -c .golangci.yml --fix
