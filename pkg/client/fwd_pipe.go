@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io/ioutil"
 
+	//nolint:staticcheck // SA1019 To be resolved later
+	//lint:ignore SA1019 This line added for support golint version of VSC
 	"github.com/golang/protobuf/proto"
 
 	p4_config_v1 "github.com/p4lang/p4runtime/go/p4/config/v1"

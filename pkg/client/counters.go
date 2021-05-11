@@ -37,7 +37,7 @@ func (c *Client) ReadCounterEntry(counter string, index int64) (*p4_v1.CounterDa
 	}
 	readEntry := readEntity.GetCounterEntry()
 	if readEntry == nil {
-		return nil, fmt.Errorf("server returned an entity but it is not a counter entry!")
+		return nil, fmt.Errorf("server returned an entity but it is not a counter entry! ")
 	}
 	return readEntry.Data, nil
 }
@@ -57,7 +57,8 @@ func (c *Client) ReadCounterEntryWildcard(counter string) ([]*p4_v1.CounterData,
 		for readEntity := range readEntityCh {
 			readEntry := readEntity.GetCounterEntry()
 			if readEntry == nil {
-				err = fmt.Errorf("server returned an entity which is not a counter entry!")
+				err = fmt.Errorf("server returned an entity which is not a counter entry! ")
+				break
 			}
 			out = append(out, readEntry.Data)
 		}

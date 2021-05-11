@@ -22,8 +22,7 @@ func (c *Client) InsertMulticastGroup(mgid uint32, ports []uint32) error {
 		},
 	}
 
-	var updateType p4_v1.Update_Type
-	updateType = p4_v1.Update_INSERT
+	updateType := p4_v1.Update_INSERT
 	update := &p4_v1.Update{
 		Type: updateType,
 		Entity: &p4_v1.Entity{
@@ -47,8 +46,7 @@ func (c *Client) DeleteMulticastGroup(mgid uint32) error {
 		},
 	}
 
-	var updateType p4_v1.Update_Type
-	updateType = p4_v1.Update_DELETE
+	updateType := p4_v1.Update_DELETE
 	update := &p4_v1.Update{
 		Type: updateType,
 		Entity: &p4_v1.Entity{

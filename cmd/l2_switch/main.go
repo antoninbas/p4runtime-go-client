@@ -100,7 +100,9 @@ func learnMacs(p4RtC *client.Client, digestList *p4_v1.DigestList) error {
 
 		smacEntry := p4RtC.NewTableEntry(
 			"IngressImpl.smac",
-			[]client.MatchInterface{&client.ExactMatch{srcAddr}},
+			[]client.MatchInterface{&client.ExactMatch{
+				Value: srcAddr,
+			}},
 			p4RtC.NewTableActionDirect("NoAction", nil),
 			smacOptions,
 		)
@@ -110,7 +112,9 @@ func learnMacs(p4RtC *client.Client, digestList *p4_v1.DigestList) error {
 
 		dmacEntry := p4RtC.NewTableEntry(
 			"IngressImpl.dmac",
-			[]client.MatchInterface{&client.ExactMatch{srcAddr}},
+			[]client.MatchInterface{&client.ExactMatch{
+				Value: srcAddr,
+			}},
 			p4RtC.NewTableActionDirect("IngressImpl.fwd", [][]byte{ingressPort}),
 			nil,
 		)
@@ -138,7 +142,9 @@ func forgetEntries(p4RtC *client.Client, notification *p4_v1.IdleTimeoutNotifica
 
 		dmacEntry := p4RtC.NewTableEntry(
 			"IngressImpl.dmac",
-			[]client.MatchInterface{&client.ExactMatch{srcAddr}},
+			[]client.MatchInterface{&client.ExactMatch{
+				Value: srcAddr,
+			}},
 			nil,
 			nil,
 		)
