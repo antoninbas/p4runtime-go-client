@@ -107,11 +107,9 @@ func (c *Client) Run(
 		case m := <-c.streamSendCh:
 			stream.Send(m)
 		case <-stopCh:
-			break
+			return nil
 		}
 	}
-
-	return nil
 }
 
 func (c *Client) WriteUpdate(update *p4_v1.Update) error {
