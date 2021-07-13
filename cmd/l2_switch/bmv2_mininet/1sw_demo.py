@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 
 # Copyright 2013-present Barefoot Networks, Inc.
 #
@@ -17,7 +17,7 @@
 
 from mininet.net import Mininet
 from mininet.topo import Topo
-from mininet.log import setLogLevel, info
+from mininet.log import setLogLevel
 from mininet.cli import CLI
 
 from p4_mininet import P4Switch, P4Host
@@ -40,21 +40,23 @@ args = parser.parse_args()
 
 class SingleSwitchTopo(Topo):
     "Single switch connected to n (< 256) hosts."
+
     def __init__(self, sw_path, pcap_dump, n, **opts):
         # Initialize topology and default options
         Topo.__init__(self, **opts)
 
         switch = self.addSwitch('s1',
-                                sw_path = sw_path,
-                                pcap_dump = pcap_dump,
-                                device_id = args.dev_id,
-                                cpu_port = args.cpu_port)
-        
-        for h in xrange(n):
-            host = self.addHost('h%d' % (h + 1),
-                                ip = "10.0.0.%d/24" % (h + 1),
-                                mac = '00:04:00:00:00:%02x' %h)
+                                sw_path=sw_path,
+                                pcap_dump=pcap_dump,
+                                device_id=args.dev_id,
+                                cpu_port=args.cpu_port)
+
+        for h in range(n):
+            host = self.addHost('h{}'.format((h + 1)),
+                                ip="10.0.0.{}/24".format((h + 1)),
+                                mac='00:04:00:00:00:{0:02d}'.format(h))
             self.addLink(host, switch)
+
 
 def main():
     num_hosts = args.num_hosts
@@ -62,23 +64,24 @@ def main():
     topo = SingleSwitchTopo("simple_switch_grpc",
                             args.pcap_dump,
                             num_hosts)
-    net = Mininet(topo = topo,
-                  host = P4Host,
-                  switch = P4Switch,
-                  controller = None)
+    net = Mininet(topo=topo,
+                  host=P4Host,
+                  switch=P4Switch,
+                  controller=None)
     net.start()
 
-    for n in xrange(num_hosts):
-        h = net.get('h%d' % (n + 1))
+    for n in range(num_hosts):
+        h = net.get('h{}'.format(n + 1))
         h.describe()
 
     sleep(1)
 
-    print "Ready !"
+    print("Ready !")
 
-    CLI( net )
+    CLI(net)
     net.stop()
 
+
 if __name__ == '__main__':
-    setLogLevel( 'info' )
+    setLogLevel('info')
     main()

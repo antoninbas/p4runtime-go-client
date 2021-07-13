@@ -17,6 +17,7 @@ from mininet.net import Mininet
 from mininet.node import Switch, Host
 from mininet.log import setLogLevel, info
 
+
 class P4Host(Host):
     def config(self, **params):
         r = super(Host, self).config(**params)
@@ -24,7 +25,7 @@ class P4Host(Host):
         self.defaultIntf().rename("eth0")
 
         for off in ["rx", "tx", "sg"]:
-            cmd = "/sbin/ethtool --offload eth0 %s off" % off
+            cmd = "/sbin/ethtool --offload eth0 {} off".format(off)
             self.cmd(cmd)
 
         # disable IPv6
@@ -35,30 +36,31 @@ class P4Host(Host):
         return r
 
     def describe(self):
-        print "**********"
-        print self.name
-        print "default interface: %s\t%s\t%s" %(
+        print("**********")
+        print(self.name)
+        print("default interface: {}\t{}\t{}".format(
             self.defaultIntf().name,
             self.defaultIntf().IP(),
             self.defaultIntf().MAC()
-        )
-        print "**********"
-        
+        ))
+        print("**********")
+
+
 class P4Switch(Switch):
     """P4 virtual switch"""
     device_id = 0
 
-    def __init__( self, name, sw_path = None,
-                  pcap_dump = False,
-                  verbose = False,
-                  device_id = None,
-                  cpu_port = None,
-                  **kwargs ):
-        Switch.__init__( self, name, **kwargs )
-        assert(sw_path)
+    def __init__(self, name, sw_path=None,
+                 pcap_dump=False,
+                 verbose=False,
+                 device_id=None,
+                 cpu_port=None,
+                 **kwargs):
+        Switch.__init__(self, name, **kwargs)
+        assert (sw_path)
         self.sw_path = sw_path
         self.verbose = verbose
-        logfile = '/tmp/p4s.%s.log' % self.name
+        logfile = '/tmp/p4s.{}.log'.format(self.name)
         self.output = open(logfile, 'w')
         self.pcap_dump = pcap_dump
         self.cpu_port = cpu_port
@@ -70,45 +72,45 @@ class P4Switch(Switch):
             P4Switch.device_id += 1
 
     @classmethod
-    def setup( cls ):
+    def setup(cls):
         pass
 
-    def start( self, controllers ):
+    def start(self, controllers):
         "Start up a new P4 switch"
-        print "Starting P4 switch", self.name
+        print("Starting P4 switch", self.name)
         args = [self.sw_path]
         for port, intf in self.intfs.items():
             if not intf.IP():
                 self.cmd("sysctl -w net.ipv6.conf.{}.disable_ipv6=1".format(intf.name))
         for port, intf in self.intfs.items():
             if not intf.IP():
-                args.extend( ['-i', str(port) + "@" + intf.name] )
+                args.extend(['-i', str(port) + "@" + intf.name])
         if self.cpu_port:
-            args.extend( ['-i', "64@" + self.cpu_port] )
+            args.extend(['-i', "64@" + self.cpu_port])
         if self.pcap_dump:
             args.append("--pcap")
         args.append("--no-p4")
         args.append("--log-console")
-        args.extend( ['--device-id', str(self.device_id)] )
+        args.extend(['--device-id', str(self.device_id)])
         P4Switch.device_id += 1
-        logfile = '/tmp/p4s.%s.log' % self.name
-        print ' '.join(args)
+        logfile = '/tmp/p4s.{}.log'.format(self.name)
+        print(' '.join(args))
 
-        self.cmd( ' '.join(args) + ' >' + logfile + ' 2>&1 &' )
+        self.cmd(' '.join(args) + ' >' + logfile + ' 2>&1 &')
 
-        print "switch has been started"
+        print("switch has been started")
 
-    def stop( self ):
+    def stop(self):
         "Terminate P4 switch."
         self.output.flush()
-        self.cmd( 'kill %' + self.sw_path )
-        self.cmd( 'wait' )
+        self.cmd('kill %' + self.sw_path)
+        self.cmd('wait')
         self.deleteIntfs()
 
-    def attach( self, intf ):
+    def attach(self, intf):
         "Connect a data port"
-        assert(0)
+        assert (0)
 
-    def detach( self, intf ):
+    def detach(self, intf):
         "Disconnect a data port"
-        assert(0)
+        assert (0)
