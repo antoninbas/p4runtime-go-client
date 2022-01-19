@@ -1,6 +1,7 @@
 package client
 
 import (
+	"fmt"
 	"time"
 
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
@@ -136,7 +137,6 @@ func (m *OptionalMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 
 type TableEntryOptions struct {
 	IdleTimeout time.Duration
-	Priority    int32
 }
 
 func (c *Client) newAction(action string, params [][]byte) *p4_v1.Action {
@@ -220,7 +220,6 @@ func (c *Client) NewTableEntry(
 		//nolint:staticcheck // SA5011 if mfs==nil then for loop is not executed by default
 		IsDefaultAction: (mfs == nil),
 		Action:          action,
-		Priority:        0,
 	}
 
 	//nolint:staticcheck // SA5011 if mfs==nil then for loop is not executed by default
@@ -230,11 +229,38 @@ func (c *Client) NewTableEntry(
 	}
 
 	if options != nil {
-		entry.Priority = options.Priority
 		entry.IdleTimeoutNs = options.IdleTimeout.Nanoseconds()
 	}
 
 	return entry
+}
+
+func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.TableEntry, error) {
+	tableID := c.tableId(table)
+
+	entry := &p4_v1.TableEntry{
+		TableId: tableID,
+	}
+
+	for idx, mf := range mfs {
+		entry.Match = append(entry.Match, mf.get(uint32(idx+1), c.CanonicalBytestrings))
+	}
+
+	entity := &p4_v1.Entity{
+		Entity: &p4_v1.Entity_TableEntry{TableEntry: entry},
+	}
+
+	readEntity, err := c.ReadEntitySingle(entity)
+	if err != nil {
+		return nil, fmt.Errorf("error when reading table entry: %v", err)
+	}
+
+	readEntry := readEntity.GetTableEntry()
+	if readEntry == nil {
+		return nil, fmt.Errorf("server returned an entity but it is not a table entry! ")
+	}
+
+	return readEntry, nil
 }
 
 func (c *Client) InsertTableEntry(entry *p4_v1.TableEntry) error {
