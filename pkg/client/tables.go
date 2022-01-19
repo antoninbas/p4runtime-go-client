@@ -136,6 +136,7 @@ func (m *OptionalMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 
 type TableEntryOptions struct {
 	IdleTimeout time.Duration
+	Priority    int32
 }
 
 func (c *Client) newAction(action string, params [][]byte) *p4_v1.Action {
@@ -219,6 +220,7 @@ func (c *Client) NewTableEntry(
 		//nolint:staticcheck // SA5011 if mfs==nil then for loop is not executed by default
 		IsDefaultAction: (mfs == nil),
 		Action:          action,
+		Priority:        0,
 	}
 
 	//nolint:staticcheck // SA5011 if mfs==nil then for loop is not executed by default
@@ -228,6 +230,7 @@ func (c *Client) NewTableEntry(
 	}
 
 	if options != nil {
+		entry.Priority = options.Priority
 		entry.IdleTimeoutNs = options.IdleTimeout.Nanoseconds()
 	}
 
