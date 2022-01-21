@@ -240,6 +240,7 @@ func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.Tabl
 
 	entry := &p4_v1.TableEntry{
 		TableId: tableID,
+		Priority: 0,
 	}
 
 	for idx, mf := range mfs {
