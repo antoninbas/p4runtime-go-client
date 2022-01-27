@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
@@ -240,7 +241,6 @@ func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.Tabl
 
 	entry := &p4_v1.TableEntry{
 		TableId: tableID,
-		Priority: 0,
 	}
 
 	for idx, mf := range mfs {
@@ -262,6 +262,46 @@ func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.Tabl
 	}
 
 	return readEntry, nil
+}
+
+func (c *Client) ReadTableEntryWildcard(table string) ([]*p4_v1.TableEntry, error) {
+	tableID := c.tableId(table)
+
+	fmt.Println("Table ID = ", tableID)
+	entry := &p4_v1.TableEntry{
+		TableId: tableID,
+	}
+
+	out := make([]*p4_v1.TableEntry, 0)
+	readEntityCh := make(chan *p4_v1.Entity, 100)
+
+	var wg sync.WaitGroup
+	var err error
+	wg.Add(1)
+
+	go func() {
+		defer wg.Done()
+		for readEntity := range readEntityCh {
+			readEntry := readEntity.GetTableEntry()
+			if readEntry == nil {
+				err = fmt.Errorf("server returned an entity which is not a table entry! ")
+				break
+			}
+			out = append(out, readEntry)
+		}
+	}()
+
+	if err := c.ReadEntityWildcard(&p4_v1.Entity{
+		Entity: &p4_v1.Entity_TableEntry{TableEntry: entry},
+	}, readEntityCh); err != nil {
+		return nil, fmt.Errorf("error when reading table entries: %v", err)
+	}
+
+	wg.Wait()
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *Client) InsertTableEntry(entry *p4_v1.TableEntry) error {
