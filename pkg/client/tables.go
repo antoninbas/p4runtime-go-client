@@ -10,6 +10,10 @@ import (
 	"github.com/antoninbas/p4runtime-go-client/pkg/util/conversion"
 )
 
+const (
+	tableWildcardReadChSize = 100
+)
+
 func ToCanonicalIf(v []byte, cond bool) []byte {
 	if cond {
 		return conversion.ToCanonicalBytestring(v)
@@ -272,7 +276,7 @@ func (c *Client) ReadTableEntryWildcard(table string) ([]*p4_v1.TableEntry, erro
 	}
 
 	out := make([]*p4_v1.TableEntry, 0)
-	readEntityCh := make(chan *p4_v1.Entity, 100)
+	readEntityCh := make(chan *p4_v1.Entity, tableWildcardReadChSize)
 
 	var wg sync.WaitGroup
 	var err error
@@ -282,11 +286,14 @@ func (c *Client) ReadTableEntryWildcard(table string) ([]*p4_v1.TableEntry, erro
 		defer wg.Done()
 		for readEntity := range readEntityCh {
 			readEntry := readEntity.GetTableEntry()
-			if readEntry == nil {
-				err = fmt.Errorf("server returned an entity which is not a table entry! ")
-				break
+			if readEntry != nil {
+				out = append(out, readEntry)
+			} else if err == nil {
+				// only set the error if this is the first error we encounter
+				// dp not stop reading from the channel, as doing so would cause
+				// ReadEntityWildcard to block indefinitely
+				err = fmt.Errorf("server returned an entity which is not a table entry!")
 			}
-			out = append(out, readEntry)
 		}
 	}()
 
