@@ -267,7 +267,6 @@ func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.Tabl
 func (c *Client) ReadTableEntryWildcard(table string) ([]*p4_v1.TableEntry, error) {
 	tableID := c.tableId(table)
 
-	fmt.Println("Table ID = ", tableID)
 	entry := &p4_v1.TableEntry{
 		TableId: tableID,
 	}
