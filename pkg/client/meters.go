@@ -14,7 +14,7 @@ const (
 func (c *Client) ReadMeterEntry(meter string, index int64) (*p4_v1.MeterConfig, error) {
 	meterID := c.meterId(meter)
 	if meterID == invalidID {
-		return nil, fmt.Errorf("meter %v not found", meter)
+		return nil, fmt.Errorf("meter %s not found", meter)
 	}
 	entry := &p4_v1.MeterEntry{
 		MeterId: meterID,
@@ -34,14 +34,14 @@ func (c *Client) ReadMeterEntry(meter string, index int64) (*p4_v1.MeterConfig, 
 }
 
 func (c *Client) ReadMeterEntryWildcard(meter string) ([]*p4_v1.MeterEntry, error) {
-	meterID := c.meterId(meter)
-	if meterID == invalidID {
-		return nil, fmt.Errorf("meter %v not found", meter)
+	p4Meter := c.findMeter(meter)
+	if p4Meter == nil {
+		return nil, fmt.Errorf("meter %s not found", meter)
 	}
 	entry := &p4_v1.MeterEntry{
-		MeterId: meterID,
+		MeterId: p4Meter.Preamble.Id,
 	}
-	out := make([]*p4_v1.MeterEntry, 0)
+	out := make([]*p4_v1.MeterEntry, 0, p4Meter.Size)
 	readEntityCh := make(chan *p4_v1.Entity, meterWildcardReadChSize)
 	var wg sync.WaitGroup
 	var err error
