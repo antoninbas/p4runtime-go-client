@@ -2,8 +2,9 @@ package client
 
 import (
 	"fmt"
-	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 	"sync"
+
+	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
 
 const (
@@ -17,7 +18,7 @@ func (c *Client) ReadMeterEntry(meter string, index int64) (*p4_v1.MeterConfig, 
 	}
 	entry := &p4_v1.MeterEntry{
 		MeterId: meterID,
-		Index: &p4_v1.Index{Index: index},
+		Index:   &p4_v1.Index{Index: index},
 	}
 	readEntity, err := c.ReadEntitySingle(&p4_v1.Entity{
 		Entity: &p4_v1.Entity_MeterEntry{MeterEntry: entry},
