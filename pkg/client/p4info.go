@@ -61,3 +61,15 @@ func (c *Client) counterId(name string) uint32 {
 	}
 	return counter.Preamble.Id
 }
+
+func (c *Client) meterId(name string) uint32 {
+	if c.p4Info == nil {
+		return invalidID
+	}
+	for _, meter := range c.p4Info.Meters {
+		if meter.Preamble.Name == name {
+			return meter.Preamble.Id
+		}
+	}
+	return invalidID
+}
