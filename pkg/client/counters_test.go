@@ -73,7 +73,7 @@ func TestReadCounterEntryWildcard_BadEntity(t *testing.T) {
 	var err error
 	go func() {
 		defer close(doneCh)
-		_, err = fakeClient.ReadCounterEntryWildcard(counterName)
+		_, err = fakeClient.ReadCounterEntryWildcard(context.Background(), counterName)
 	}()
 	timeout := 1 * time.Second
 	select {

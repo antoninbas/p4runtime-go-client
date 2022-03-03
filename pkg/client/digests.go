@@ -1,21 +1,28 @@
 package client
 
 import (
+	"context"
+
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
 
-func (c *Client) AckDigestList(digestList *p4_v1.DigestList) error {
+func (c *Client) AckDigestList(ctx context.Context, digestList *p4_v1.DigestList) error {
 	m := &p4_v1.StreamMessageRequest{
 		Update: &p4_v1.StreamMessageRequest_DigestAck{DigestAck: &p4_v1.DigestListAck{
 			DigestId: digestList.DigestId,
 			ListId:   digestList.ListId,
 		}},
 	}
-	c.streamSendCh <- m
+	select {
+	case c.streamSendCh <- m:
+		break
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 	return nil
 }
 
-func (c *Client) EnableDigest(digest string, config *p4_v1.DigestEntry_Config) error {
+func (c *Client) EnableDigest(ctx context.Context, digest string, config *p4_v1.DigestEntry_Config) error {
 	digestID := c.digestId(digest)
 	entry := &p4_v1.DigestEntry{
 		DigestId: digestID,
@@ -27,10 +34,10 @@ func (c *Client) EnableDigest(digest string, config *p4_v1.DigestEntry_Config) e
 			Entity: &p4_v1.Entity_DigestEntry{DigestEntry: entry},
 		},
 	}
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }
 
-func (c *Client) ModifyDigest(digest string, config *p4_v1.DigestEntry_Config) error {
+func (c *Client) ModifyDigest(ctx context.Context, digest string, config *p4_v1.DigestEntry_Config) error {
 	digestID := c.digestId(digest)
 	entry := &p4_v1.DigestEntry{
 		DigestId: digestID,
@@ -42,10 +49,10 @@ func (c *Client) ModifyDigest(digest string, config *p4_v1.DigestEntry_Config) e
 			Entity: &p4_v1.Entity_DigestEntry{DigestEntry: entry},
 		},
 	}
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }
 
-func (c *Client) DisableDigest(digest string) error {
+func (c *Client) DisableDigest(ctx context.Context, digest string) error {
 	digestID := c.digestId(digest)
 	entry := &p4_v1.DigestEntry{
 		DigestId: digestID,
@@ -56,5 +63,5 @@ func (c *Client) DisableDigest(digest string) error {
 			Entity: &p4_v1.Entity_DigestEntry{DigestEntry: entry},
 		},
 	}
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }

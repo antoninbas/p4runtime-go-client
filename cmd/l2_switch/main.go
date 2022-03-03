@@ -43,7 +43,7 @@ func portsToSlice(ports string) ([]uint32, error) {
 	return res, nil
 }
 
-func initialize(p4RtC *client.Client, ports []uint32) error {
+func initialize(ctx context.Context, p4RtC *client.Client, ports []uint32) error {
 	// generate a digest message for every data plane notification, not appropriate for
 	// production
 	digestConfig := &p4_v1.DigestEntry_Config{
@@ -52,13 +52,13 @@ func initialize(p4RtC *client.Client, ports []uint32) error {
 		AckTimeoutNs: time.Second.Nanoseconds(),
 	}
 	log.Debugf("Enabling digest 'digest_t'")
-	if err := p4RtC.EnableDigest("digest_t", digestConfig); err != nil {
+	if err := p4RtC.EnableDigest(ctx, "digest_t", digestConfig); err != nil {
 		return fmt.Errorf("Cannot enable digest 'digest_t': %v", err)
 	}
 
 	log.Debugf("Configuring multicast group %d for broadcast", mgrp)
 	// TODO: ports should be configurable
-	if err := p4RtC.InsertMulticastGroup(mgrp, ports); err != nil {
+	if err := p4RtC.InsertMulticastGroup(ctx, mgrp, ports); err != nil {
 		return fmt.Errorf("Cannot configure multicast group %d for broadcast: %v", mgrp, err)
 	}
 
@@ -70,21 +70,21 @@ func initialize(p4RtC *client.Client, ports []uint32) error {
 		p4RtC.NewTableActionDirect("IngressImpl.broadcast", [][]byte{mgrpBytes}),
 		nil,
 	)
-	if err := p4RtC.ModifyTableEntry(dmacEntry); err != nil {
+	if err := p4RtC.ModifyTableEntry(ctx, dmacEntry); err != nil {
 		return fmt.Errorf("Cannot set default action for 'dmac': %v", err)
 	}
 	return nil
 }
 
-func cleanup(p4RtC *client.Client) error {
+func cleanup(ctx context.Context, p4RtC *client.Client) error {
 	// necessary because of https://github.com/p4lang/behavioral-model/issues/891
-	if err := p4RtC.DeleteMulticastGroup(mgrp); err != nil {
+	if err := p4RtC.DeleteMulticastGroup(ctx, mgrp); err != nil {
 		return fmt.Errorf("Cannot delete multicast group %d: %v", mgrp, err)
 	}
 	return nil
 }
 
-func learnMacs(p4RtC *client.Client, digestList *p4_v1.DigestList) error {
+func learnMacs(ctx context.Context, p4RtC *client.Client, digestList *p4_v1.DigestList) error {
 	for _, digestData := range digestList.Data {
 		s := digestData.GetStruct()
 		srcAddr := s.Members[0].GetBitstring()
@@ -106,7 +106,7 @@ func learnMacs(p4RtC *client.Client, digestList *p4_v1.DigestList) error {
 			p4RtC.NewTableActionDirect("NoAction", nil),
 			smacOptions,
 		)
-		if err := p4RtC.InsertTableEntry(smacEntry); err != nil {
+		if err := p4RtC.InsertTableEntry(ctx, smacEntry); err != nil {
 			log.Errorf("Cannot insert entry in 'smac': %v", err)
 		}
 
@@ -118,19 +118,19 @@ func learnMacs(p4RtC *client.Client, digestList *p4_v1.DigestList) error {
 			p4RtC.NewTableActionDirect("IngressImpl.fwd", [][]byte{ingressPort}),
 			nil,
 		)
-		if err := p4RtC.InsertTableEntry(dmacEntry); err != nil {
+		if err := p4RtC.InsertTableEntry(ctx, dmacEntry); err != nil {
 			log.Errorf("Cannot insert entry in 'dmac': %v", err)
 		}
 	}
 
-	if err := p4RtC.AckDigestList(digestList); err != nil {
+	if err := p4RtC.AckDigestList(ctx, digestList); err != nil {
 		return fmt.Errorf("Error when acking digest list: %v", err)
 	}
 
 	return nil
 }
 
-func forgetEntries(p4RtC *client.Client, notification *p4_v1.IdleTimeoutNotification) {
+func forgetEntries(ctx context.Context, p4RtC *client.Client, notification *p4_v1.IdleTimeoutNotification) {
 	for _, entry := range notification.TableEntry {
 		srcAddr := entry.Match[0].GetExact().Value
 		log.WithFields(log.Fields{
@@ -148,29 +148,29 @@ func forgetEntries(p4RtC *client.Client, notification *p4_v1.IdleTimeoutNotifica
 			nil,
 			nil,
 		)
-		if err := p4RtC.DeleteTableEntry(dmacEntry); err != nil {
+		if err := p4RtC.DeleteTableEntry(ctx, dmacEntry); err != nil {
 			log.Errorf("Cannot delete entry from 'dmac': %v", err)
 		}
 
-		if err := p4RtC.DeleteTableEntry(entry); err != nil {
+		if err := p4RtC.DeleteTableEntry(ctx, entry); err != nil {
 			log.Errorf("Cannot delete entry from 'smac': %v", err)
 		}
 	}
 }
 
-func handleStreamMessages(p4RtC *client.Client, messageCh <-chan *p4_v1.StreamMessageResponse) {
+func handleStreamMessages(ctx context.Context, p4RtC *client.Client, messageCh <-chan *p4_v1.StreamMessageResponse) {
 	for message := range messageCh {
 		switch m := message.Update.(type) {
 		case *p4_v1.StreamMessageResponse_Packet:
 			log.Debugf("Received PacketIn")
 		case *p4_v1.StreamMessageResponse_Digest:
 			log.Debugf("Received DigestList")
-			if err := learnMacs(p4RtC, m.Digest); err != nil {
+			if err := learnMacs(ctx, p4RtC, m.Digest); err != nil {
 				log.Errorf("Error when learning MACs: %v", err)
 			}
 		case *p4_v1.StreamMessageResponse_IdleTimeoutNotification:
 			log.Debugf("Received IdleTimeoutNotification")
-			forgetEntries(p4RtC, m.IdleTimeoutNotification)
+			forgetEntries(ctx, p4RtC, m.IdleTimeoutNotification)
 		case *p4_v1.StreamMessageResponse_Error:
 			log.Errorf("Received StreamError")
 		default:
@@ -182,8 +182,8 @@ func handleStreamMessages(p4RtC *client.Client, messageCh <-chan *p4_v1.StreamMe
 func printPortCounters(p4RtC *client.Client, ports []uint32, period time.Duration, stopCh <-chan struct{}) {
 	ticker := time.NewTicker(period)
 
-	printOne := func(name string) error {
-		counts, err := p4RtC.ReadCounterEntryWildcard(name)
+	printOne := func(ctx context.Context, name string) error {
+		counts, err := p4RtC.ReadCounterEntryWildcard(ctx, name)
 		if err != nil {
 			return fmt.Errorf("error when reading '%s' counters: %v", name, err)
 		}
@@ -199,11 +199,11 @@ func printPortCounters(p4RtC *client.Client, ports []uint32, period time.Duratio
 		return nil
 	}
 
-	doPrint := func() error {
-		if err := printOne("igPortsCounts"); err != nil {
+	doPrint := func(ctx context.Context) error {
+		if err := printOne(ctx, "igPortsCounts"); err != nil {
 			return err
 		}
-		if err := printOne("egPortsCounts"); err != nil {
+		if err := printOne(ctx, "egPortsCounts"); err != nil {
 			return err
 		}
 		return nil
@@ -212,13 +212,14 @@ func printPortCounters(p4RtC *client.Client, ports []uint32, period time.Duratio
 	log.Infof("Printing port counters every %v", period)
 
 	go func() {
+		ctx := context.Background()
 		defer ticker.Stop()
 		for {
 			select {
 			case <-stopCh:
 				return
 			case <-ticker.C:
-				if err := doPrint(); err != nil {
+				if err := doPrint(ctx); err != nil {
 					log.Errorf("Error when printing port counters: %v", err)
 				}
 			}
@@ -227,6 +228,8 @@ func printPortCounters(p4RtC *client.Client, ports []uint32, period time.Duratio
 }
 
 func main() {
+	ctx := context.Background()
+
 	var addr string
 	flag.StringVar(&addr, "addr", defaultAddr, "P4Runtime server socket")
 	var deviceID uint64
@@ -276,7 +279,7 @@ func main() {
 	defer conn.Close()
 
 	c := p4_v1.NewP4RuntimeClient(conn)
-	resp, err := c.Capabilities(context.Background(), &p4_v1.CapabilitiesRequest{})
+	resp, err := c.Capabilities(ctx, &p4_v1.CapabilitiesRequest{})
 	if err != nil {
 		log.Fatalf("Error in Capabilities RPC: %v", err)
 	}
@@ -310,27 +313,35 @@ func main() {
 	}()
 
 	// it would also be safe to spawn multiple goroutines to handle messages from the channel
-	go handleStreamMessages(p4RtC, messageCh)
+	go func() {
+		ctx := context.Background()
+		handleStreamMessages(ctx, p4RtC, messageCh)
+	}()
 
-	timeout := 5 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	select {
-	case <-ctx.Done():
-		log.Fatalf("Could not become the primary client within %v", timeout)
-	case <-waitCh:
-	}
+	func() {
+		timeout := 5 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		select {
+		case <-ctx.Done():
+			log.Fatalf("Could not become the primary client within %v", timeout)
+		case <-waitCh:
+		}
+	}()
 
 	log.Info("Setting forwarding pipe")
-	if _, err := p4RtC.SetFwdPipeFromBytes(binBytes, p4infoBytes, 0); err != nil {
+	if _, err := p4RtC.SetFwdPipeFromBytes(ctx, binBytes, p4infoBytes, 0); err != nil {
 		log.Fatalf("Error when setting forwarding pipe: %v", err)
 	}
 
-	if err := initialize(p4RtC, ports); err != nil {
+	if err := initialize(ctx, p4RtC, ports); err != nil {
 		log.Fatalf("Error when initializing defaults: %v", err)
 	}
 	defer func() {
-		if err := cleanup(p4RtC); err != nil {
+		timeout := 5 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		if err := cleanup(ctx, p4RtC); err != nil {
 			log.Errorf("Error during cleanup: %v", err)
 		}
 	}()

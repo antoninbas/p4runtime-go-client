@@ -24,6 +24,8 @@ var (
 )
 
 func main() {
+	ctx := context.Background()
+
 	var addr string
 	flag.StringVar(&addr, "addr", defaultAddr, "P4Runtime server socket")
 	var deviceID uint64
@@ -47,7 +49,7 @@ func main() {
 	defer conn.Close()
 
 	c := p4_v1.NewP4RuntimeClient(conn)
-	resp, err := c.Capabilities(context.Background(), &p4_v1.CapabilitiesRequest{})
+	resp, err := c.Capabilities(ctx, &p4_v1.CapabilitiesRequest{})
 	if err != nil {
 		log.Fatalf("Error in Capabilities RPC: %v", err)
 	}
@@ -78,17 +80,19 @@ func main() {
 		}
 	}()
 
-	timeout := 5 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	select {
-	case <-ctx.Done():
-		log.Fatalf("Could not become the primary client within %v", timeout)
-	case <-waitCh:
-	}
+	func() {
+		timeout := 5 * time.Second
+		ctx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		select {
+		case <-ctx.Done():
+			log.Fatalf("Could not become the primary client within %v", timeout)
+		case <-waitCh:
+		}
+	}()
 
 	log.Info("Setting forwarding pipe")
-	if _, err := p4RtC.SetFwdPipe(binPath, p4infoPath, 0); err != nil {
+	if _, err := p4RtC.SetFwdPipe(ctx, binPath, p4infoPath, 0); err != nil {
 		log.Fatalf("Error when setting forwarding pipe: %v", err)
 	}
 

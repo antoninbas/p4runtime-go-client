@@ -1,10 +1,12 @@
 package client
 
 import (
+	"context"
+
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
 
-func (c *Client) InsertMulticastGroup(mgid uint32, ports []uint32) error {
+func (c *Client) InsertMulticastGroup(ctx context.Context, mgid uint32, ports []uint32) error {
 	entry := &p4_v1.MulticastGroupEntry{
 		MulticastGroupId: mgid,
 	}
@@ -32,10 +34,10 @@ func (c *Client) InsertMulticastGroup(mgid uint32, ports []uint32) error {
 		},
 	}
 
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }
 
-func (c *Client) DeleteMulticastGroup(mgid uint32) error {
+func (c *Client) DeleteMulticastGroup(ctx context.Context, mgid uint32) error {
 	entry := &p4_v1.MulticastGroupEntry{
 		MulticastGroupId: mgid,
 	}
@@ -56,5 +58,5 @@ func (c *Client) DeleteMulticastGroup(mgid uint32) error {
 		},
 	}
 
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }
