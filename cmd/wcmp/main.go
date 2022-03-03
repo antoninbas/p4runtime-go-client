@@ -36,7 +36,7 @@ func groupToBytes(group string) []byte {
 	return append(padding, b...)
 }
 
-func insertOneGroup(p4RtC *client.Client, group string) error {
+func insertOneGroup(ctx context.Context, p4RtC *client.Client, group string) error {
 	mfs := []client.MatchInterface{&client.ExactMatch{
 		Value: groupToBytes(group),
 	}}
@@ -54,18 +54,20 @@ func insertOneGroup(p4RtC *client.Client, group string) error {
 	actionSet.AddAction("IngressImpl.set_nhop", [][]byte{nextHopToBytes("nexthop-62")}, 10, watchPort)
 	actionSet.AddAction("IngressImpl.set_nhop", [][]byte{nextHopToBytes("nexthop-64")}, 10, watchPort)
 	entry := p4RtC.NewTableEntry("IngressImpl.wcmp_group", mfs, actionSet.TableAction(), nil)
-	return p4RtC.InsertTableEntry(entry)
+	return p4RtC.InsertTableEntry(ctx, entry)
 }
 
-func deleteOneGroup(p4RtC *client.Client, group string) error {
+func deleteOneGroup(ctx context.Context, p4RtC *client.Client, group string) error {
 	mfs := []client.MatchInterface{&client.ExactMatch{
 		Value: groupToBytes(group),
 	}}
 	entry := p4RtC.NewTableEntry("IngressImpl.wcmp_group", mfs, nil, nil)
-	return p4RtC.DeleteTableEntry(entry)
+	return p4RtC.DeleteTableEntry(ctx, entry)
 }
 
 func main() {
+	ctx := context.Background()
+
 	var addr string
 	flag.StringVar(&addr, "addr", defaultAddr, "P4Runtime server socket")
 	var deviceID uint64
@@ -108,7 +110,7 @@ func main() {
 	defer conn.Close()
 
 	c := p4_v1.NewP4RuntimeClient(conn)
-	resp, err := c.Capabilities(context.Background(), &p4_v1.CapabilitiesRequest{})
+	resp, err := c.Capabilities(ctx, &p4_v1.CapabilitiesRequest{})
 	if err != nil {
 		log.Fatalf("Error in Capabilities RPC: %v", err)
 	}
@@ -141,17 +143,19 @@ func main() {
 		}
 	}()
 
-	timeout := 5 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	select {
-	case <-ctx.Done():
-		log.Fatalf("Could not become the primary client within %v", timeout)
-	case <-waitCh:
-	}
+	func() {
+		timeout := 5 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), timeout)
+		defer cancel()
+		select {
+		case <-ctx.Done():
+			log.Fatalf("Could not become the primary client within %v", timeout)
+		case <-waitCh:
+		}
+	}()
 
 	log.Info("Setting forwarding pipe")
-	if _, err := p4RtC.SetFwdPipeFromBytes(binBytes, p4infoBytes, 0); err != nil {
+	if _, err := p4RtC.SetFwdPipeFromBytes(ctx, binBytes, p4infoBytes, 0); err != nil {
 		log.Fatalf("Error when setting forwarding pipe: %v", err)
 	}
 
@@ -159,7 +163,7 @@ func main() {
 
 	for i := 0; i < 100; i++ {
 		group := fmt.Sprintf("group-%d", i)
-		if err := insertOneGroup(p4RtC, group); err != nil {
+		if err := insertOneGroup(ctx, p4RtC, group); err != nil {
 			log.Errorf("Error when installing entry for '%s': %v", group, err)
 		}
 	}
@@ -168,7 +172,7 @@ func main() {
 
 	for i := 0; i < 100; i++ {
 		group := fmt.Sprintf("group-%d", i)
-		if err := deleteOneGroup(p4RtC, group); err != nil {
+		if err := deleteOneGroup(ctx, p4RtC, group); err != nil {
 			log.Errorf("Error when removing entry for '%s': %v", group, err)
 		}
 	}

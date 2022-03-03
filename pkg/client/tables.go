@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
@@ -240,7 +241,7 @@ func (c *Client) NewTableEntry(
 	return entry
 }
 
-func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.TableEntry, error) {
+func (c *Client) ReadTableEntry(ctx context.Context, table string, mfs []MatchInterface) (*p4_v1.TableEntry, error) {
 	tableID := c.tableId(table)
 
 	entry := &p4_v1.TableEntry{
@@ -255,7 +256,7 @@ func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.Tabl
 		Entity: &p4_v1.Entity_TableEntry{TableEntry: entry},
 	}
 
-	readEntity, err := c.ReadEntitySingle(entity)
+	readEntity, err := c.ReadEntitySingle(ctx, entity)
 	if err != nil {
 		return nil, fmt.Errorf("error when reading table entry: %v", err)
 	}
@@ -268,7 +269,7 @@ func (c *Client) ReadTableEntry(table string, mfs []MatchInterface) (*p4_v1.Tabl
 	return readEntry, nil
 }
 
-func (c *Client) ReadTableEntryWildcard(table string) ([]*p4_v1.TableEntry, error) {
+func (c *Client) ReadTableEntryWildcard(ctx context.Context, table string) ([]*p4_v1.TableEntry, error) {
 	tableID := c.tableId(table)
 
 	entry := &p4_v1.TableEntry{
@@ -297,7 +298,7 @@ func (c *Client) ReadTableEntryWildcard(table string) ([]*p4_v1.TableEntry, erro
 		}
 	}()
 
-	if err := c.ReadEntityWildcard(&p4_v1.Entity{
+	if err := c.ReadEntityWildcard(ctx, &p4_v1.Entity{
 		Entity: &p4_v1.Entity_TableEntry{TableEntry: entry},
 	}, readEntityCh); err != nil {
 		return nil, fmt.Errorf("error when reading table entries: %v", err)
@@ -310,7 +311,7 @@ func (c *Client) ReadTableEntryWildcard(table string) ([]*p4_v1.TableEntry, erro
 	return out, nil
 }
 
-func (c *Client) InsertTableEntry(entry *p4_v1.TableEntry) error {
+func (c *Client) InsertTableEntry(ctx context.Context, entry *p4_v1.TableEntry) error {
 	update := &p4_v1.Update{
 		Type: p4_v1.Update_INSERT,
 		Entity: &p4_v1.Entity{
@@ -318,10 +319,10 @@ func (c *Client) InsertTableEntry(entry *p4_v1.TableEntry) error {
 		},
 	}
 
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }
 
-func (c *Client) ModifyTableEntry(entry *p4_v1.TableEntry) error {
+func (c *Client) ModifyTableEntry(ctx context.Context, entry *p4_v1.TableEntry) error {
 	update := &p4_v1.Update{
 		Type: p4_v1.Update_MODIFY,
 		Entity: &p4_v1.Entity{
@@ -329,10 +330,10 @@ func (c *Client) ModifyTableEntry(entry *p4_v1.TableEntry) error {
 		},
 	}
 
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }
 
-func (c *Client) DeleteTableEntry(entry *p4_v1.TableEntry) error {
+func (c *Client) DeleteTableEntry(ctx context.Context, entry *p4_v1.TableEntry) error {
 	update := &p4_v1.Update{
 		Type: p4_v1.Update_DELETE,
 		Entity: &p4_v1.Entity{
@@ -340,5 +341,5 @@ func (c *Client) DeleteTableEntry(entry *p4_v1.TableEntry) error {
 		},
 	}
 
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }

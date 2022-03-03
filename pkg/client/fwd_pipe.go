@@ -19,7 +19,7 @@ type FwdPipeConfig struct {
 	Cookie         uint64
 }
 
-func (c *Client) SetFwdPipeFromBytes(binBytes, p4infoBytes []byte, cookie uint64) (*FwdPipeConfig, error) {
+func (c *Client) SetFwdPipeFromBytes(ctx context.Context, binBytes, p4infoBytes []byte, cookie uint64) (*FwdPipeConfig, error) {
 	p4Info := &p4_config_v1.P4Info{}
 	if err := proto.UnmarshalText(string(p4infoBytes), p4Info); err != nil {
 		return nil, fmt.Errorf("failed to decode P4Info Protobuf message: %v", err)
@@ -38,7 +38,7 @@ func (c *Client) SetFwdPipeFromBytes(binBytes, p4infoBytes []byte, cookie uint64
 		Action:     p4_v1.SetForwardingPipelineConfigRequest_VERIFY_AND_COMMIT,
 		Config:     config,
 	}
-	_, err := c.SetForwardingPipelineConfig(context.Background(), req)
+	_, err := c.SetForwardingPipelineConfig(ctx, req)
 	if err == nil {
 		c.p4Info = p4Info
 		return &FwdPipeConfig{
@@ -51,7 +51,7 @@ func (c *Client) SetFwdPipeFromBytes(binBytes, p4infoBytes []byte, cookie uint64
 	return nil, err
 }
 
-func (c *Client) SetFwdPipe(binPath string, p4infoPath string, cookie uint64) (*FwdPipeConfig, error) {
+func (c *Client) SetFwdPipe(ctx context.Context, binPath string, p4infoPath string, cookie uint64) (*FwdPipeConfig, error) {
 	binBytes, err := ioutil.ReadFile(binPath)
 	if err != nil {
 		return nil, fmt.Errorf("error when reading binary device config: %v", err)
@@ -60,7 +60,7 @@ func (c *Client) SetFwdPipe(binPath string, p4infoPath string, cookie uint64) (*
 	if err != nil {
 		return nil, fmt.Errorf("error when reading P4Info text file: %v", err)
 	}
-	return c.SetFwdPipeFromBytes(binBytes, p4infoBytes, cookie)
+	return c.SetFwdPipeFromBytes(ctx, binBytes, p4infoBytes, cookie)
 }
 
 type GetFwdPipeResponseType int32
@@ -77,13 +77,13 @@ const (
 // responseType is oneof:
 //  GetFwdPipeAll, GetFwdPipeCookieOnly, GetFwdPipeP4InfoAndCookie, GetFwdPipeDeviceConfigAndCookie
 // See https://p4.org/p4runtime/spec/v1.3.0/P4Runtime-Spec.html#sec-getforwardingpipelineconfig-rpc
-func (c *Client) GetFwdPipe(responseType GetFwdPipeResponseType) (*FwdPipeConfig, error) {
+func (c *Client) GetFwdPipe(ctx context.Context, responseType GetFwdPipeResponseType) (*FwdPipeConfig, error) {
 	req := &p4_v1.GetForwardingPipelineConfigRequest{
 		DeviceId:     c.deviceID,
 		ResponseType: p4_v1.GetForwardingPipelineConfigRequest_ResponseType(responseType),
 	}
 
-	resp, err := c.GetForwardingPipelineConfig(context.Background(), req)
+	resp, err := c.GetForwardingPipelineConfig(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("error when retrieving forwardingpipeline config: %v", err)
 	}

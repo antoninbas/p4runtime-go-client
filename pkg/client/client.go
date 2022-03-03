@@ -61,6 +61,9 @@ func (c *Client) Run(
 	arbitrationCh chan<- bool,
 	messageCh chan<- *p4_v1.StreamMessageResponse, // all other stream messages besides arbitration
 ) error {
+	// we use an empty Context which is never cancelled and has no
+	// deadline. We will close the stream by calling CloseSend when the
+	// caller closes the stopCh channel.
 	stream, err := c.StreamChannel(context.Background())
 	if err != nil {
 		return fmt.Errorf("cannot establish stream: %v", err)
@@ -112,22 +115,22 @@ func (c *Client) Run(
 	}
 }
 
-func (c *Client) WriteUpdate(update *p4_v1.Update) error {
+func (c *Client) WriteUpdate(ctx context.Context, update *p4_v1.Update) error {
 	req := &p4_v1.WriteRequest{
 		DeviceId:   c.deviceID,
 		ElectionId: &c.electionID,
 		Updates:    []*p4_v1.Update{update},
 	}
-	_, err := c.Write(context.Background(), req)
+	_, err := c.Write(ctx, req)
 	return err
 }
 
-func (c *Client) ReadEntitySingle(entity *p4_v1.Entity) (*p4_v1.Entity, error) {
+func (c *Client) ReadEntitySingle(ctx context.Context, entity *p4_v1.Entity) (*p4_v1.Entity, error) {
 	req := &p4_v1.ReadRequest{
 		DeviceId: c.deviceID,
 		Entities: []*p4_v1.Entity{entity},
 	}
-	stream, err := c.Read(context.TODO(), req)
+	stream, err := c.Read(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -157,14 +160,14 @@ func (c *Client) ReadEntitySingle(entity *p4_v1.Entity) (*p4_v1.Entity, error) {
 
 // ReadEntityWildcard will block and send all read entities on readEntityCh. It will close the
 // channel when the RPC completes and return any error that may have occurred.
-func (c *Client) ReadEntityWildcard(entity *p4_v1.Entity, readEntityCh chan<- *p4_v1.Entity) error {
+func (c *Client) ReadEntityWildcard(ctx context.Context, entity *p4_v1.Entity, readEntityCh chan<- *p4_v1.Entity) error {
 	defer close(readEntityCh)
 
 	req := &p4_v1.ReadRequest{
 		DeviceId: c.deviceID,
 		Entities: []*p4_v1.Entity{entity},
 	}
-	stream, err := c.Read(context.TODO(), req)
+	stream, err := c.Read(ctx, req)
 	if err != nil {
 		return err
 	}

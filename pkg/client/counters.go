@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -11,7 +12,7 @@ const (
 	counterWildcardReadChSize = 100
 )
 
-func (c *Client) ModifyCounterEntry(counter string, index int64, data *p4_v1.CounterData) error {
+func (c *Client) ModifyCounterEntry(ctx context.Context, counter string, index int64, data *p4_v1.CounterData) error {
 	counterID := c.counterId(counter)
 	entry := &p4_v1.CounterEntry{
 		CounterId: counterID,
@@ -24,16 +25,16 @@ func (c *Client) ModifyCounterEntry(counter string, index int64, data *p4_v1.Cou
 			Entity: &p4_v1.Entity_CounterEntry{CounterEntry: entry},
 		},
 	}
-	return c.WriteUpdate(update)
+	return c.WriteUpdate(ctx, update)
 }
 
-func (c *Client) ReadCounterEntry(counter string, index int64) (*p4_v1.CounterData, error) {
+func (c *Client) ReadCounterEntry(ctx context.Context, counter string, index int64) (*p4_v1.CounterData, error) {
 	counterID := c.counterId(counter)
 	entry := &p4_v1.CounterEntry{
 		CounterId: counterID,
 		Index:     &p4_v1.Index{Index: index},
 	}
-	readEntity, err := c.ReadEntitySingle(&p4_v1.Entity{
+	readEntity, err := c.ReadEntitySingle(ctx, &p4_v1.Entity{
 		Entity: &p4_v1.Entity_CounterEntry{CounterEntry: entry},
 	})
 	if err != nil {
@@ -46,7 +47,7 @@ func (c *Client) ReadCounterEntry(counter string, index int64) (*p4_v1.CounterDa
 	return readEntry.Data, nil
 }
 
-func (c *Client) ReadCounterEntryWildcard(counter string) ([]*p4_v1.CounterData, error) {
+func (c *Client) ReadCounterEntryWildcard(ctx context.Context, counter string) ([]*p4_v1.CounterData, error) {
 	p4Counter := c.findCounter(counter)
 	entry := &p4_v1.CounterEntry{
 		CounterId: p4Counter.Preamble.Id,
@@ -70,7 +71,7 @@ func (c *Client) ReadCounterEntryWildcard(counter string) ([]*p4_v1.CounterData,
 			}
 		}
 	}()
-	if err := c.ReadEntityWildcard(&p4_v1.Entity{
+	if err := c.ReadEntityWildcard(ctx, &p4_v1.Entity{
 		Entity: &p4_v1.Entity_CounterEntry{CounterEntry: entry},
 	}, readEntityCh); err != nil {
 		return nil, fmt.Errorf("error when reading counter entries: %v", err)

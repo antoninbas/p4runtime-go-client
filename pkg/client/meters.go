@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"sync"
 
@@ -11,7 +12,7 @@ const (
 	meterWildcardReadChSize = 100
 )
 
-func (c *Client) ReadMeterEntry(meter string, index int64) (*p4_v1.MeterConfig, error) {
+func (c *Client) ReadMeterEntry(ctx context.Context, meter string, index int64) (*p4_v1.MeterConfig, error) {
 	meterID := c.meterId(meter)
 	if meterID == invalidID {
 		return nil, fmt.Errorf("meter %s not found", meter)
@@ -20,7 +21,7 @@ func (c *Client) ReadMeterEntry(meter string, index int64) (*p4_v1.MeterConfig, 
 		MeterId: meterID,
 		Index:   &p4_v1.Index{Index: index},
 	}
-	readEntity, err := c.ReadEntitySingle(&p4_v1.Entity{
+	readEntity, err := c.ReadEntitySingle(ctx, &p4_v1.Entity{
 		Entity: &p4_v1.Entity_MeterEntry{MeterEntry: entry},
 	})
 	if err != nil {
@@ -33,7 +34,7 @@ func (c *Client) ReadMeterEntry(meter string, index int64) (*p4_v1.MeterConfig, 
 	return readEntry.Config, nil
 }
 
-func (c *Client) ReadMeterEntryWildcard(meter string) ([]*p4_v1.MeterEntry, error) {
+func (c *Client) ReadMeterEntryWildcard(ctx context.Context, meter string) ([]*p4_v1.MeterEntry, error) {
 	p4Meter := c.findMeter(meter)
 	if p4Meter == nil {
 		return nil, fmt.Errorf("meter %s not found", meter)
@@ -60,7 +61,7 @@ func (c *Client) ReadMeterEntryWildcard(meter string) ([]*p4_v1.MeterEntry, erro
 			}
 		}
 	}()
-	if err := c.ReadEntityWildcard(&p4_v1.Entity{
+	if err := c.ReadEntityWildcard(ctx, &p4_v1.Entity{
 		Entity: &p4_v1.Entity_MeterEntry{MeterEntry: entry},
 	}, readEntityCh); err != nil {
 		return nil, fmt.Errorf("error when reading meter entries: %v", err)
