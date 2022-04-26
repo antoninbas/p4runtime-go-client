@@ -19,7 +19,7 @@ type FwdPipeConfig struct {
 	Cookie         uint64
 }
 
-func (c *Client) ChangeFwdPipeFromBytes(ctx context.Context, binBytes, p4infoBytes []byte, cookie uint64, action p4_v1.SetForwardingPipelineConfigRequest_Action) (*FwdPipeConfig, error) {
+func (c *Client) SetFwdPipeFromBytesWithAction(ctx context.Context, binBytes, p4infoBytes []byte, cookie uint64, action p4_v1.SetForwardingPipelineConfigRequest_Action) (*FwdPipeConfig, error) {
 	p4Info := &p4_config_v1.P4Info{}
 	if err := proto.UnmarshalText(string(p4infoBytes), p4Info); err != nil {
 		return nil, fmt.Errorf("failed to decode P4Info Protobuf message: %v", err)
@@ -52,11 +52,11 @@ func (c *Client) ChangeFwdPipeFromBytes(ctx context.Context, binBytes, p4infoByt
 }
 
 func (c *Client) SetFwdPipeFromBytes(ctx context.Context, binBytes, p4infoBytes []byte, cookie uint64) (*FwdPipeConfig, error) {
-	return c.ChangeFwdPipeFromBytes(ctx, binBytes, p4infoBytes, cookie, p4_v1.SetForwardingPipelineConfigRequest_VERIFY_AND_COMMIT)
+	return c.SetFwdPipeFromBytesWithAction(ctx, binBytes, p4infoBytes, cookie, p4_v1.SetForwardingPipelineConfigRequest_VERIFY_AND_COMMIT)
 }
 
 func (c *Client) SaveFwdPipeFromBytes(ctx context.Context, binBytes, p4infoBytes []byte, cookie uint64) (*FwdPipeConfig, error) {
-	return c.ChangeFwdPipeFromBytes(ctx, binBytes, p4infoBytes, cookie, p4_v1.SetForwardingPipelineConfigRequest_VERIFY_AND_SAVE)
+	return c.SetFwdPipeFromBytesWithAction(ctx, binBytes, p4infoBytes, cookie, p4_v1.SetForwardingPipelineConfigRequest_VERIFY_AND_SAVE)
 }
 
 func (c *Client) CommitFwdPipe(ctx context.Context) (*p4_v1.SetForwardingPipelineConfigResponse, error) {
