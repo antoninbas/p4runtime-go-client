@@ -171,6 +171,14 @@ func (c *Client) NewTableActionDirect(
 	}
 }
 
+func (c *Client) NewTableActionInDirect(
+	groupId uint32,
+) *p4_v1.TableAction {
+	return &p4_v1.TableAction{
+		Type: &p4_v1.TableAction_ActionProfileGroupId{ActionProfileGroupId: groupId},
+	}
+}
+
 type ActionProfileActionSet struct {
 	client *Client
 	action *p4_v1.TableAction
@@ -343,3 +351,103 @@ func (c *Client) DeleteTableEntry(ctx context.Context, entry *p4_v1.TableEntry) 
 
 	return c.WriteUpdate(ctx, update)
 }
+
+func (c *Client) NewActionProfileMemberEntry(
+        table string,
+        memberId uint32,
+        action string,
+        params [][]byte,
+) *p4_v1.ActionProfileMember {
+        tableID := c.actionProfilesId(table)
+
+        entry := &p4_v1.ActionProfileMember{
+                ActionProfileId: tableID,
+                MemberId: memberId,
+                Action: c.newAction(action, params),
+                }
+        return entry
+}
+
+func (c *Client) InsertActionProfileMemberEntry(ctx context.Context, entry *p4_v1.ActionProfileMember) error {
+        update := &p4_v1.Update{
+                Type: p4_v1.Update_INSERT,
+                Entity: &p4_v1.Entity{
+                        Entity: &p4_v1.Entity_ActionProfileMember{ActionProfileMember: entry},
+                },
+        }
+
+        return c.WriteUpdate(ctx, update)
+}
+
+func (c *Client) ModifyActionProfileMemberEntry(ctx context.Context, entry *p4_v1.ActionProfileMember) error {
+        update := &p4_v1.Update{
+                Type: p4_v1.Update_MODIFY,
+                Entity: &p4_v1.Entity{
+                        Entity: &p4_v1.Entity_ActionProfileMember{ActionProfileMember: entry},
+                },
+        }
+
+        return c.WriteUpdate(ctx, update)
+}
+
+func (c *Client) DeleteActionProfileMemberEntry(ctx context.Context, entry *p4_v1.ActionProfileMember) error {
+        update := &p4_v1.Update{
+                Type: p4_v1.Update_DELETE,
+                Entity: &p4_v1.Entity{
+                        Entity: &p4_v1.Entity_ActionProfileMember{ActionProfileMember: entry},
+                },
+        }
+
+        return c.WriteUpdate(ctx, update)
+}
+
+func (c *Client) NewActionProfileGroupEntry(
+        table string,
+        groupId uint32,
+        members []*p4_v1.ActionProfileGroup_Member,
+        size int32,
+) *p4_v1.ActionProfileGroup {
+        tableID := c.actionProfilesId(table)
+
+        entry := &p4_v1.ActionProfileGroup{
+                ActionProfileId: tableID,
+                GroupId: groupId,
+                Members: members,
+                MaxSize: size,
+                }
+        return entry
+}
+
+func (c *Client) InsertActionProfileGroupEntry(ctx context.Context, entry *p4_v1.ActionProfileGroup) error {
+        update := &p4_v1.Update{
+                Type: p4_v1.Update_INSERT,
+                Entity: &p4_v1.Entity{
+                        Entity: &p4_v1.Entity_ActionProfileGroup{ActionProfileGroup: entry},
+                },
+        }
+
+        return c.WriteUpdate(ctx, update)
+}
+
+func (c *Client) ModifyActionProfileGroupEntry(ctx context.Context, entry *p4_v1.ActionProfileGroup) error {
+        update := &p4_v1.Update{
+                Type: p4_v1.Update_MODIFY,
+                Entity: &p4_v1.Entity{
+                        Entity: &p4_v1.Entity_ActionProfileGroup{ActionProfileGroup: entry},
+                },
+        }
+
+        return c.WriteUpdate(ctx, update)
+}
+
+func (c *Client) DeleteActionProfileGroupEntry(ctx context.Context, entry *p4_v1.ActionProfileGroup) error {
+        update := &p4_v1.Update{
+                Type: p4_v1.Update_DELETE,
+                Entity: &p4_v1.Entity{
+                        Entity: &p4_v1.Entity_ActionProfileGroup{ActionProfileGroup: entry},
+                },
+        }
+
+        return c.WriteUpdate(ctx, update)
+}
+
