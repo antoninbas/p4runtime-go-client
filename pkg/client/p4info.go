@@ -30,6 +30,18 @@ func (c *Client) actionId(name string) uint32 {
 	return invalidID
 }
 
+func (c *Client) actionProfilesId(name string) uint32 {
+	if c.p4Info == nil {
+		return invalidID
+	}
+	for _, actionProfile := range c.p4Info.ActionProfiles {
+		if actionProfile.Preamble.Name == name {
+			return actionProfile.Preamble.Id
+		}
+	}
+	return invalidID
+}
+
 func (c *Client) digestId(name string) uint32 {
 	if c.p4Info == nil {
 		return invalidID
