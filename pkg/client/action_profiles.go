@@ -23,15 +23,15 @@ func (c *Client) NewTableActionGroup(
 }
 
 func (c *Client) NewActionProfileMember(
-	table string,
+	actionProfile string,
 	memberID uint32,
 	action string,
 	params [][]byte,
 ) *p4_v1.ActionProfileMember {
-	tableID := c.actionProfileId(table)
+	actionProfileID := c.actionProfileId(actionProfile)
 
 	entry := &p4_v1.ActionProfileMember{
-		ActionProfileId: tableID,
+		ActionProfileId: actionProfileID,
 		MemberId: memberID,
 		Action: c.newAction(action, params),
 	}
@@ -73,15 +73,15 @@ func (c *Client) DeleteActionProfileMember(ctx context.Context, entry *p4_v1.Act
 }
 
 func (c *Client) NewActionProfileGroup(
-	table string,
+	actionProfile string,
 	groupID uint32,
 	members []*p4_v1.ActionProfileGroup_Member,
 	size int32,
 ) *p4_v1.ActionProfileGroup {
-	tableID := c.actionProfileId(table)
+	actionProfileID := c.actionProfileId(actionProfile)
 
 	entry := &p4_v1.ActionProfileGroup{
-		ActionProfileId: tableID,
+		ActionProfileId: actionProfileID,
 		GroupId: groupID,
 		Members: members,
 		MaxSize: size,
