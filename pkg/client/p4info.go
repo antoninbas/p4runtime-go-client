@@ -30,7 +30,7 @@ func (c *Client) actionId(name string) uint32 {
 	return invalidID
 }
 
-func (c *Client) actionProfilesId(name string) uint32 {
+func (c *Client) actionProfileId(name string) uint32 {
 	if c.p4Info == nil {
 		return invalidID
 	}
