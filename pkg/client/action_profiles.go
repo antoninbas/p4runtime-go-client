@@ -32,8 +32,8 @@ func (c *Client) NewActionProfileMember(
 
 	entry := &p4_v1.ActionProfileMember{
 		ActionProfileId: actionProfileID,
-		MemberId: memberID,
-		Action: c.newAction(action, params),
+		MemberId:        memberID,
+		Action:          c.newAction(action, params),
 	}
 
 	return entry
@@ -82,9 +82,9 @@ func (c *Client) NewActionProfileGroup(
 
 	entry := &p4_v1.ActionProfileGroup{
 		ActionProfileId: actionProfileID,
-		GroupId: groupID,
-		Members: members,
-		MaxSize: size,
+		GroupId:         groupID,
+		Members:         members,
+		MaxSize:         size,
 	}
 
 	return entry
