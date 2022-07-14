@@ -143,6 +143,7 @@ func (m *OptionalMatch) get(ID uint32, canonical bool) *p4_v1.FieldMatch {
 
 type TableEntryOptions struct {
 	IdleTimeout time.Duration
+	Priority    int32
 }
 
 func (c *Client) newAction(action string, params [][]byte) *p4_v1.Action {
@@ -236,6 +237,7 @@ func (c *Client) NewTableEntry(
 
 	if options != nil {
 		entry.IdleTimeoutNs = options.IdleTimeout.Nanoseconds()
+		entry.Priority = options.Priority
 	}
 
 	return entry
