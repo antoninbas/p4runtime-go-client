@@ -35,6 +35,9 @@ func (c *Client) matchFieldId(tableName, fieldName string) uint32 {
 		return invalidID
 	}
 	table := c.findTable(tableName)
+	if table == nil {
+		return invalidID
+	}
 	for _, mf := range table.MatchFields {
 		if mf.Name == fieldName {
 			return mf.Id
