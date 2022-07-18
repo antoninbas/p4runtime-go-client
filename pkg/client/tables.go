@@ -216,7 +216,7 @@ func (s *ActionProfileActionSet) TableAction() *p4_v1.TableAction {
 // for action
 func (c *Client) NewTableEntry(
 	table string,
-	mfs []MatchInterface,
+	mfs map[string]MatchInterface,
 	action *p4_v1.TableAction,
 	options *TableEntryOptions,
 ) *p4_v1.TableEntry {
@@ -231,8 +231,9 @@ func (c *Client) NewTableEntry(
 
 	//nolint:staticcheck // SA5011 if mfs==nil then for loop is not executed by default
 	//lint:ignore SA5011 This line added for support golint version of VSC
-	for idx, mf := range mfs {
-		entry.Match = append(entry.Match, mf.get(uint32(idx+1), c.CanonicalBytestrings))
+	for name, mf := range mfs {
+		fieldID := c.matchFieldId(table, name)
+		entry.Match = append(entry.Match, mf.get(fieldID, c.CanonicalBytestrings))
 	}
 
 	if options != nil {

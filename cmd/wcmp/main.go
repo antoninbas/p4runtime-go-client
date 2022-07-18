@@ -37,9 +37,11 @@ func groupToBytes(group string) []byte {
 }
 
 func insertOneGroup(ctx context.Context, p4RtC *client.Client, group string) error {
-	mfs := []client.MatchInterface{&client.ExactMatch{
-		Value: groupToBytes(group),
-	}}
+	mfs := map[string]client.MatchInterface{
+		"meta.group_id": &client.ExactMatch{
+			Value: groupToBytes(group),
+		},
+	}
 	watchPort := client.NewPortFromInt(1)
 	actionSet := p4RtC.NewActionProfileActionSet()
 	actionSet.AddAction("IngressImpl.set_nhop", [][]byte{nextHopToBytes("nexthop-56")}, 12, watchPort)
@@ -58,9 +60,11 @@ func insertOneGroup(ctx context.Context, p4RtC *client.Client, group string) err
 }
 
 func deleteOneGroup(ctx context.Context, p4RtC *client.Client, group string) error {
-	mfs := []client.MatchInterface{&client.ExactMatch{
-		Value: groupToBytes(group),
-	}}
+	mfs := map[string]client.MatchInterface{
+		"meta.group_id": &client.ExactMatch{
+			Value: groupToBytes(group),
+		},
+	}
 	entry := p4RtC.NewTableEntry("IngressImpl.wcmp_group", mfs, nil, nil)
 	return p4RtC.DeleteTableEntry(ctx, entry)
 }

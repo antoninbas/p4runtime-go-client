@@ -18,6 +18,34 @@ func (c *Client) tableId(name string) uint32 {
 	return invalidID
 }
 
+func (c *Client) findTable(name string) *p4_config_v1.Table {
+	if c.p4Info == nil {
+		return nil
+	}
+	for _, table := range c.p4Info.Tables {
+		if table.Preamble.Name == name {
+			return table
+		}
+	}
+	return nil
+}
+
+func (c *Client) matchFieldId(tableName, fieldName string) uint32 {
+	if c.p4Info == nil {
+		return invalidID
+	}
+	table := c.findTable(tableName)
+	if table == nil {
+		return invalidID
+	}
+	for _, mf := range table.MatchFields {
+		if mf.Name == fieldName {
+			return mf.Id
+		}
+	}
+	return invalidID
+}
+
 func (c *Client) actionId(name string) uint32 {
 	if c.p4Info == nil {
 		return invalidID
