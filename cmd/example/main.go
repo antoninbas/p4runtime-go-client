@@ -59,7 +59,7 @@ func main() {
 
 	electionID := p4_v1.Uint128{High: 0, Low: 1}
 
-	p4RtC := client.NewClient(c, deviceID, electionID)
+	p4RtC := client.NewClient(c, deviceID, electionID, nil)
 	arbitrationCh := make(chan bool)
 	go p4RtC.Run(stopCh, arbitrationCh, nil)
 
