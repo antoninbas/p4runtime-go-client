@@ -84,6 +84,7 @@ func newTestClient(p4RuntimeClient *fakeP4RuntimeClient, p4Info *p4_config_v1.P4
 		P4RuntimeClient: p4RuntimeClient,
 		deviceID:        1,
 		electionID:      p4_v1.Uint128{High: 0, Low: 1},
+		role:            &p4_v1.Role{Id: 1, Config: nil},
 		streamSendCh:    make(chan *p4_v1.StreamMessageRequest, 1000),
 		p4Info:          p4Info,
 	}
