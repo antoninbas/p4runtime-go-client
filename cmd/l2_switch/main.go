@@ -295,7 +295,7 @@ func main() {
 
 	electionID := p4_v1.Uint128{High: 0, Low: 1}
 
-	p4RtC := client.NewClient(c, deviceID, electionID, nil)
+	p4RtC := client.NewClient(c, deviceID, electionID)
 	arbitrationCh := make(chan bool)
 	messageCh := make(chan *p4_v1.StreamMessageResponse, 1000)
 	defer close(messageCh)
