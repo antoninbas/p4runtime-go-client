@@ -44,17 +44,7 @@ func NewClient(
 	electionID p4_v1.Uint128,
 	optionsModifierFns ...func(*ClientOptions),
 ) *Client {
-	options := defaultClientOptions
-	for _, fn := range optionsModifierFns {
-		fn(&options)
-	}
-	return &Client{
-		ClientOptions:   options,
-		P4RuntimeClient: p4RuntimeClient,
-		deviceID:        deviceID,
-		electionID:      electionID,
-		streamSendCh:    make(chan *p4_v1.StreamMessageRequest, 1000), // TODO: should be configurable
-	}
+	return NewClientForRole(p4RuntimeClient, deviceID, electionID, nil, optionsModifierFns...)
 }
 
 func NewClientForRole(
