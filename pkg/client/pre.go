@@ -26,10 +26,10 @@ func (c *Client) InsertCloneSession(ctx context.Context, id uint32, ports []uint
 		PacketLengthBytes: options.PacketLenBytes,
 	}
 
-	for _, port := range ports {
+	for idx, port := range ports {
 		replica := &p4_v1.Replica{
 			EgressPort: port,
-			Instance:   uint32(0),
+			Instance:   uint32(idx),
 		}
 		entry.Replicas = append(entry.Replicas, replica)
 	}
