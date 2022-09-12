@@ -198,3 +198,18 @@ func (c *Client) ReadEntityWildcard(ctx context.Context, entity *p4_v1.Entity, r
 	}
 	return nil
 }
+
+func (c *Client) SendMessage(ctx context.Context, msg *p4_v1.StreamMessageRequest) error {
+	select {
+	case c.streamSendCh <- msg:
+		break
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+	return nil
+}
+
+func (c *Client) SendPacketOut(ctx context.Context, pkt *p4_v1.PacketOut) error {
+	msg := &p4_v1.StreamMessageRequest{Update: &p4_v1.StreamMessageRequest_Packet{Packet: pkt}}
+	return c.SendMessage(ctx, msg)
+}
