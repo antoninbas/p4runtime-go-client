@@ -13,13 +13,7 @@ func (c *Client) AckDigestList(ctx context.Context, digestList *p4_v1.DigestList
 			ListId:   digestList.ListId,
 		}},
 	}
-	select {
-	case c.streamSendCh <- m:
-		break
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-	return nil
+	return c.SendMessage(ctx, m)
 }
 
 func (c *Client) EnableDigest(ctx context.Context, digest string, config *p4_v1.DigestEntry_Config) error {

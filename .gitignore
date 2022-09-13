@@ -23,3 +23,6 @@ bin/
 
 # Go code linting program
 .golangci-bin
+
+# Ignore IntelliJ project settings file
+.idea
