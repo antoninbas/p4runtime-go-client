@@ -83,6 +83,8 @@ func (c *Client) Run(
 
 	defer stream.CloseSend()
 
+	connStatusCh := make(chan error)
+
 	go func() {
 		for {
 			in, err := stream.Recv()
@@ -91,7 +93,9 @@ func (c *Client) Run(
 				return
 			}
 			if err != nil {
-				log.Fatalf("Failed to receive a stream message : %v", err)
+				log.Errorf("Failed to receive a stream message : %v", err)
+				connStatusCh <- err
+				return
 			}
 			arbitration, ok := in.Update.(*p4_v1.StreamMessageResponse_Arbitration)
 			if !ok {
@@ -124,6 +128,8 @@ func (c *Client) Run(
 			stream.Send(m)
 		case <-stopCh:
 			return nil
+		case err := <-connStatusCh:
+			return err
 		}
 	}
 }
