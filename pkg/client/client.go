@@ -138,8 +138,10 @@ func (c *Client) WriteUpdate(ctx context.Context, update *p4_v1.Update) error {
 	req := &p4_v1.WriteRequest{
 		DeviceId:   c.deviceID,
 		ElectionId: &c.electionID,
-		Role:       c.role.Name,
 		Updates:    []*p4_v1.Update{update},
+	}
+	if c.role != nil {
+		req.Role = c.role.Name
 	}
 	_, err := c.Write(ctx, req)
 	return err
@@ -148,8 +150,10 @@ func (c *Client) WriteUpdate(ctx context.Context, update *p4_v1.Update) error {
 func (c *Client) ReadEntitySingle(ctx context.Context, entity *p4_v1.Entity) (*p4_v1.Entity, error) {
 	req := &p4_v1.ReadRequest{
 		DeviceId: c.deviceID,
-		Role:     c.role.Name,
 		Entities: []*p4_v1.Entity{entity},
+	}
+	if c.role != nil {
+		req.Role = c.role.Name
 	}
 	stream, err := c.Read(ctx, req)
 	if err != nil {
@@ -186,8 +190,10 @@ func (c *Client) ReadEntityWildcard(ctx context.Context, entity *p4_v1.Entity, r
 
 	req := &p4_v1.ReadRequest{
 		DeviceId: c.deviceID,
-		Role:     c.role.Name,
 		Entities: []*p4_v1.Entity{entity},
+	}
+	if c.role != nil {
+		req.Role = c.role.Name
 	}
 	stream, err := c.Read(ctx, req)
 	if err != nil {
