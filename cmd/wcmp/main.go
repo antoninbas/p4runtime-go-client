@@ -122,7 +122,7 @@ func main() {
 
 	stopCh := signals.RegisterSignalHandlers()
 
-	electionID := p4_v1.Uint128{High: 0, Low: 1}
+	electionID := &p4_v1.Uint128{High: 0, Low: 1}
 
 	p4RtC := client.NewClient(c, deviceID, electionID)
 	arbitrationCh := make(chan bool)
