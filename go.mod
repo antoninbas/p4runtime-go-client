@@ -7,6 +7,7 @@ require (
 	github.com/p4lang/p4runtime v1.4.0-rc.5
 	github.com/sirupsen/logrus v1.5.0
 	github.com/stretchr/testify v1.2.2
+	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/grpc v1.28.1
+	google.golang.org/grpc v1.32.0
 )
