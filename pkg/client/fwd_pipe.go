@@ -35,6 +35,7 @@ func (c *Client) SetFwdPipeFromBytesWithAction(ctx context.Context, binBytes, p4
 	req := &p4_v1.SetForwardingPipelineConfigRequest{
 		DeviceId:   c.deviceID,
 		ElectionId: &c.electionID,
+		Role:       c.role.Name,
 		Action:     action,
 		Config:     config,
 	}
