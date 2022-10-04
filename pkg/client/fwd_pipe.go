@@ -34,9 +34,12 @@ func (c *Client) SetFwdPipeFromBytesWithAction(ctx context.Context, binBytes, p4
 
 	req := &p4_v1.SetForwardingPipelineConfigRequest{
 		DeviceId:   c.deviceID,
-		ElectionId: &c.electionID,
+		ElectionId: c.electionID,
 		Action:     action,
 		Config:     config,
+	}
+	if c.role != nil {
+		req.Role = c.role.Name
 	}
 	_, err := c.SetForwardingPipelineConfig(ctx, req)
 	if err == nil {
@@ -62,7 +65,7 @@ func (c *Client) SaveFwdPipeFromBytes(ctx context.Context, binBytes, p4infoBytes
 func (c *Client) CommitFwdPipe(ctx context.Context) (*p4_v1.SetForwardingPipelineConfigResponse, error) {
 	req := &p4_v1.SetForwardingPipelineConfigRequest{
 		DeviceId:   c.deviceID,
-		ElectionId: &c.electionID,
+		ElectionId: c.electionID,
 		Action:     p4_v1.SetForwardingPipelineConfigRequest_COMMIT,
 	}
 	return c.SetForwardingPipelineConfig(ctx, req)

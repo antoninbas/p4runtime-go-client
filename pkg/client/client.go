@@ -32,7 +32,7 @@ type Client struct {
 	ClientOptions
 	p4_v1.P4RuntimeClient
 	deviceID     uint64
-	electionID   p4_v1.Uint128
+	electionID   *p4_v1.Uint128
 	p4Info       *p4_config_v1.P4Info
 	role         *p4_v1.Role
 	streamSendCh chan *p4_v1.StreamMessageRequest
@@ -41,7 +41,7 @@ type Client struct {
 func NewClient(
 	p4RuntimeClient p4_v1.P4RuntimeClient,
 	deviceID uint64,
-	electionID p4_v1.Uint128,
+	electionID *p4_v1.Uint128,
 	optionsModifierFns ...func(*ClientOptions),
 ) *Client {
 	return NewClientForRole(p4RuntimeClient, deviceID, electionID, nil, optionsModifierFns...)
@@ -50,7 +50,7 @@ func NewClient(
 func NewClientForRole(
 	p4RuntimeClient p4_v1.P4RuntimeClient,
 	deviceID uint64,
-	electionID p4_v1.Uint128,
+	electionID *p4_v1.Uint128,
 	role *p4_v1.Role,
 	optionsModifierFns ...func(*ClientOptions),
 ) *Client {
@@ -117,7 +117,7 @@ func (c *Client) Run(
 	stream.Send(&p4_v1.StreamMessageRequest{
 		Update: &p4_v1.StreamMessageRequest_Arbitration{Arbitration: &p4_v1.MasterArbitrationUpdate{
 			DeviceId:   c.deviceID,
-			ElectionId: &c.electionID,
+			ElectionId: c.electionID,
 			Role:       c.role,
 		}},
 	})
@@ -137,8 +137,11 @@ func (c *Client) Run(
 func (c *Client) WriteUpdate(ctx context.Context, update *p4_v1.Update) error {
 	req := &p4_v1.WriteRequest{
 		DeviceId:   c.deviceID,
-		ElectionId: &c.electionID,
+		ElectionId: c.electionID,
 		Updates:    []*p4_v1.Update{update},
+	}
+	if c.role != nil {
+		req.Role = c.role.Name
 	}
 	_, err := c.Write(ctx, req)
 	return err
@@ -148,6 +151,9 @@ func (c *Client) ReadEntitySingle(ctx context.Context, entity *p4_v1.Entity) (*p
 	req := &p4_v1.ReadRequest{
 		DeviceId: c.deviceID,
 		Entities: []*p4_v1.Entity{entity},
+	}
+	if c.role != nil {
+		req.Role = c.role.Name
 	}
 	stream, err := c.Read(ctx, req)
 	if err != nil {
@@ -185,6 +191,9 @@ func (c *Client) ReadEntityWildcard(ctx context.Context, entity *p4_v1.Entity, r
 	req := &p4_v1.ReadRequest{
 		DeviceId: c.deviceID,
 		Entities: []*p4_v1.Entity{entity},
+	}
+	if c.role != nil {
+		req.Role = c.role.Name
 	}
 	stream, err := c.Read(ctx, req)
 	if err != nil {
