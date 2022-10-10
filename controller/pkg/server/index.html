@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang='it'>
+
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>Network controller</title>
+    <link href='./web/css/bootstrap/bootstrap.min.css' rel='stylesheet'>
+    <script src='./web/js/bootstrap/bootstrap.bundle.min.js'></script>
+</head>
+
+<body>
+
+    <!--    HEADER  -->
+    <nav class='navbar navbar-expand-lg bg-light fixed-top'>
+        <div class='container-fluid'>
+            <button class='navbar-toggler' type='button' data-bs-toggle='collapse'
+                data-bs-target='#navbarSupportedContent' aria-controls='navbarSupportedContent' aria-expanded='false'
+                aria-label='Toggle navigation'>
+                <span class='navbar-toggler-icon'></span>
+            </button>
+            <img src="./web/img/gatto.png" style="width:32px"/>
+            <div class='collapse navbar-collapse' id='navbarSupportedContent'>
+                <ul class='navbar-nav me-auto mb-2 mb-lg-0'>
+                    <li class='nav-item'>
+                        <a class='nav-link active' aria-current='page' href='/'>
+                            Home
+                        </a>
+                    </li>
+                    <li class='nav-item'>
+                        <a class='nav-link active' aria-current='page' href='/topology'>
+                            Topology
+                        </a>
+                    </li>
+                    <!--
+                    <li class='nav-item dropdown'>
+                        <a class='nav-link dropdown-toggle' href='#' id='navbarDropdown' role='button'
+                            data-bs-toggle='dropdown' aria-expanded='false'>
+                            Dropdown
+                        </a>
+                        <ul class='dropdown-menu' aria-labelledby='navbarDropdown'>
+                            <li><a class='dropdown-item' href='#'>Action</a></li>
+                            <li><a class='dropdown-item' href='#'>Another action</a></li>
+                            <li>
+                                <hr class='dropdown-divider'>
+                            </li>
+                            <li><a class='dropdown-item' href='#'>Something else here</a></li>
+                        </ul>
+                    </li>
+                    -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!--    FINE-HEADER   -->
+    <!--    INIZIO BODY    -->
+    <div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>
+        {{ if ne "" .ErrorMessage }}
+            <div class='alert alert-danger mt-4 mb-0' role='alert' >
+                {{ .ErrorMessage }}
+            </div>
+        {{ end }}
+        {{ if ne "" .SuccessMessage }}
+            <div class='alert alert-success mt-4 mb-0' role='alert' >
+                {{ .SuccessMessage }}
+            </div>
+        {{ end }}
+        <div class='col-12 row justify-content-center mt-4'>
+            <div class='col-12 col-sm-6 col-lg-4 col-xl-3 mt-5 mt-lg-0 align-items-center'>
+                <h2 class='mb-3'>Change P4 program</h2>
+
+                <!-- Ripeti la parte sottostante per ogni switch -->
+                {{ $programs := .ProgramNames }}
+                {{ range $switch := .Switches }}
+                    <h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switch{{$switch.Name}}'
+                        data-bs-toggle='collapse'>Switch {{$switch.Name}}</a></h2>
+                    <ul class='list-group collapse' id='switch{{$switch.Name}}'>
+                        {{range $program := $programs}}
+                        <li class='list-group-item d-flex justify-content-between align-items-center'>
+                            {{$program}}
+                            {{if eq $switch.ProgramName $program }}
+                                <button class='btn btn-success rounded-pill' disabled>Executing</button>
+                            {{else}}
+                                <a href='executeProgram?switch={{$switch.Name}}&program={{$program}}'><button class='btn btn-primary rounded-pill'>Execute</button></a>
+                            {{end}}
+                        </li>
+                        {{end}}
+                    </ul>
+                {{end}}
+                <!-- Finisce la parte da ripetere per ogni switch -->
+            </div>
+
+            <div class='col-12 col-sm-6 col-lg-4 col-xl-3 mt-5 mt-lg-0 align-items-center'>
+
+                <h2 class='mb-3'>Install new rules</h2>
+                <!-- Ripeti la parte sottostante per ogni switch -->
+                {{ range $switch := .Switches }}
+                <h2 class='mt-4'>
+                    <a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switch{{$switch.Name}}Rule' data-bs-toggle='collapse'>Switch {{$switch.Name}}</a>
+                </h2>
+                <div class='list-group collapse' id='switch{{$switch.Name}}Rule'>
+                    <div class='accordion' id='accordion{{$switch.Name}}'>
+                        <!-- Ripeti la parte sottostante per ogni regola -->
+                        {{ range $index_rule, $rule := $switch.ProgramActions }}
+                        <div class='accordion-item'>
+                            <h2 class='accordion-header' id='heading{{$switch.Name}}Rule{{$index_rule}}'>
+                                <button class='accordion-button collapsed' type='button' data-bs-toggle='collapse'
+                                    data-bs-target='#collapse{{$switch.Name}}Rule{{$index_rule}}' aria-expanded='false' aria-controls='collapse{{$switch.Name}}Rule{{$index_rule}}'>
+                                    {{ $rule.ActionName }}
+                                </button>
+                            </h2>
+                            <div id='collapse{{$switch.Name}}Rule{{$index_rule}}' class='accordion-collapse collapse' aria-labelledby='heading{{$switch.Name}}Rule{{$index_rule}}'
+                                data-bs-parent='#accordion{{$switch.Name}}'>
+                                <div class='accordion-body'>
+                                    <strong>Table&nbsp;<img src="./web/img/table.svg"></strong><br>
+                                    <ul>
+                                        <li>
+                                            {{$rule.TableName}}
+                                        </li>
+                                    </ul>
+                                    <strong>Key</strong>&nbsp;<img src="./web/img/key.svg"><br>
+                                    <ul>
+                                        {{ range $key := $rule.Keys }}
+                                        <li>
+                                            {{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;), match: {{ $key.MatchType }}
+                                        </li>
+                                        {{end}}
+                                    </ul>
+                                    {{ if not $rule.ActionParams }}
+                                        <strong>No parameter required</strong><br><br>
+                                    {{ else }}
+                                        <strong>Parameters&nbsp;<img src="./web/img/card-list.svg"></strong><br>
+                                        <ul>
+                                            {{ range $param := $rule.ActionParams }}
+                                            <li>
+                                                {{ $param.Name }} (bit&lt;{{ $param.Bitwidth }}&gt;)
+                                            </li>
+                                            {{ end }}
+                                        </ul>
+                                    {{ end }}
+                                    <a href='addRule?switch={{$switch.Name}}&idTable={{$rule.TableId}}&idAction={{$rule.ActionId}}'><button class='btn btn-primary rounded-pill'>Add new rule</button></a>
+                                </div>
+                            </div>
+                        </div>
+                        {{end}}
+                        <!-- Finisce la parte da ripetere per ogni regola -->
+                    </div>
+                </div>
+                {{ end }}
+                <!-- Finisce la parte da ripetere per ogni switch -->
+            </div>
+
+            <div class='col-12 col-sm-6 col-lg-4 col-xl-5 mt-5 mt-lg-0 justify-content-center align-items-center'>
+                <h2 class='mb-3'>Installed Rules</h2>
+                <!-- Ripeti la parte sottostante per ogni switch -->
+                {{ range $switch := .Switches }}
+                <h2 class='mt-4'><a class='btn btn-light fs-4 p-2 w-100' style='font-weight: 500' href='#switch{{$switch.Name}}AllRules'
+                    data-bs-toggle='collapse'>Switch {{ $switch.Name }}</a>
+                </h2>
+                <div class="list-group collapse" id="switch{{$switch.Name}}AllRules">
+                    <table class="table text-center">
+                        <thead>
+                        <tr>
+                            <th scope="col">Table&nbsp;<img src="./web/img/table.svg"></th>
+                            <th scope="col">Action&nbsp;<img src="./web/img/action.svg"></th>
+                            <th scope="col">Key&nbsp;<img src="./web/img/key.svg"></th>
+                            <th scope="col">Params&nbsp;<img src="./web/img/card-list.svg"></th>
+                            <th scope="col">&nbsp;</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {{ range $num_rule,$rule := $switch.InstalledRules }}
+                        <tr class="align-middle">
+                            <td>{{ $rule.Table }}</td>
+                            <td>{{ $rule.Action }}</td>
+                            <td>
+                            {{ range $idx, $key := $rule.Keys }}
+                                {{ if ne $idx 0 }}
+                                <br>
+                                {{ end }}
+                                {{ $key.Value }} {{ $key.Mask }}
+                            {{ end }}
+                            </td>
+                            <td>
+                            {{ range $idx, $par := $rule.ActionParam }}
+                                {{ if ne $idx 0 }}
+                                <br>
+                                {{ end }}
+                                {{ $par }}
+                            {{ end }}
+                            </td>
+                            <td><a href='removeRule?switch={{$switch.Name}}&number={{$num_rule}}'>
+                                <button class='badge bg-danger rounded-pill' type='submit'>
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash3" viewBox="0 0 16 16">
+                                        <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5ZM11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H2.506a.58.58 0 0 0-.01 0H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1h-.995a.59.59 0 0 0-.01 0H11Zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5h9.916Zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47ZM8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5Z"/>
+                                    </svg>
+                                </button>
+                            </a></td>
+                        </tr>
+                        {{ end }}
+                        </tbody>
+                    </table>
+                </div>
+                {{ end }}
+                <!-- Finisce la parte da ripetere per ogni switch -->
+            </div>
+        </div>
+    </div>
+        <!--    FINE BODY   -->
+</body>
+
+</html>

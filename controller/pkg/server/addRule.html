@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang='it'>
+
+<head>
+    <meta charset='utf-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1'>
+    <title>Add-Rule to switch</title>
+    <link href='./web/css/bootstrap/bootstrap.min.css' rel='stylesheet'>
+    <script src='./web/js/bootstrap/bootstrap.bundle.min.js'></script>
+</head>
+
+<body>
+
+    <!--    HEADER  -->
+    <nav class='navbar navbar-expand-lg bg-light fixed-top'>
+        <div class='container-fluid'>
+            <button class='navbar-toggler' type='button' data-bs-toggle='collapse'
+                data-bs-target='#navbarSupportedContent' aria-controls='navbarSupportedContent' aria-expanded='false'
+                aria-label='Toggle navigation'>
+                <span class='navbar-toggler-icon'></span>
+            </button>
+            <img src="./web/img/gatto.png" style="width:32px"/>
+            <div class='collapse navbar-collapse' id='navbarSupportedContent'>
+                <ul class='navbar-nav me-auto mb-2 mb-lg-0'>
+                    <li class='nav-item'>
+                        <a class='nav-link active' aria-current='page' href='/'>
+                            Home
+                        </a>
+                    </li>
+                    <li class='nav-item'>
+                        <a class='nav-link active' aria-current='page' href='/topology'>
+                            Topology
+                        </a>
+                    </li>
+                    <!--
+                    <li class='nav-item dropdown'>
+                        <a class='nav-link dropdown-toggle' href='#' id='navbarDropdown' role='button'
+                            data-bs-toggle='dropdown' aria-expanded='false'>
+                            Dropdown
+                        </a>
+                        <ul class='dropdown-menu' aria-labelledby='navbarDropdown'>
+                            <li><a class='dropdown-item' href='#'>Action</a></li>
+                            <li><a class='dropdown-item' href='#'>Another action</a></li>
+                            <li>
+                                <hr class='dropdown-divider'>
+                            </li>
+                            <li><a class='dropdown-item' href='#'>Something else here</a></li>
+                        </ul>
+                    </li>
+                    -->
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <!--    FINE-HEADER   -->
+    <!--    INIZIO   -->
+    <div class='d-flex flex-column container-fluid align-items-center mt-5 mb-5'>
+        <div class='col-12 row justify-content-center mt-5'>
+            <div class='col col-12 col-sm-7 col-lg-4 col-xl-4 mt-5 mt-lg-0 align-items-center'>
+                <form class='col col-12 row justify-content-center' action='#' method='POST'>
+
+                    <!-- Eventuale messaggio di successo/errore?
+
+                    <div class="alert alert-success mt-5" role="alert" >
+                        Operazione eseguita con successo
+                    </div>
+
+                    -->
+                    <h2>Add new rule for switch {{ .SwitchName }}</h2>
+                    <div class='mb-3'>
+                        <div class='mb-3 row'>
+                            <label for='staticTable' class='col-sm-3 col-form-label'><strong>Table</strong>&nbsp;<img src="./web/img/table.svg"></label>
+                            <div class='col-sm-7'>
+                                <input type='text' readonly class='form-control-plaintext' id='staticTable' value='{{.Rule.TableName}}'>
+                            </div>
+                        </div>
+                        <div class='mb-3 row'>
+                            <label for='staticRule' class='col-sm-3 col-form-label'><strong>Action</strong>&nbsp;<img src="./web/img/action.svg"></label>
+                            <div class='col-sm-7'>
+                                <input type='text' readonly class='form-control-plaintext' id='staticRule' value='{{.Rule.ActionName}}'>
+                            </div>
+                        </div>
+                        {{ $rule := .Rule }}
+                        {{ range $i, $key := $rule.Keys }}
+                        <div class='mb-3 row'>
+                            {{ if eq $i 0 }}
+                            <label class='form-label'><strong>Key</strong>&nbsp;<img src="./web/img/key.svg"></label>
+                            {{ end }}
+                            <label for='key{{$i}}' class='col-sm-10 col-form-label'>{{ $key.Name }} (bit&lt;{{ $key.Bitwidth }}&gt;), match type: {{ $key.MatchType }}</label>
+                            <div class='col-sm-10'>
+                                <input type='text' class='form-control' name='key{{$i}}' id='key{{$i}}' placeholder="{{ $key.Pattern }}">
+                            </div>
+                            {{ if eq $key.MatchType "TERNARY" }}
+                            <div class='col-sm-10 mt-1'>
+                                <input type='text' class='form-control' name='mask{{$i}}' id='mask{{$i}}' placeholder="Mask in exadecimal format">
+                            </div>
+                            {{ end }}
+                        </div>
+                        {{end}}
+                        {{ range $i, $par := $rule.ActionParams }}
+                        <div class='mb-3 row'>
+                            {{ if eq $i 0 }}
+                            <label class='form-label'><strong>Parameters</strong>&nbsp;<img src="./web/img/card-list.svg"></label>
+                            {{ end }}
+                            <label for='par{{$i}}' class='col-sm-10 col-form-label'>{{ $par.Name }} (bit&lt;{{ $par.Bitwidth }}&gt;)</label>
+                            <div class='col-sm-10'>
+                                <input type='text' class='form-control' name='par{{$i}}' id='par{{$i}}' placeholder="{{ $par.Pattern }}">
+                            </div>
+                        </div>
+                        {{ end }}
+                        <div class='col-sm-10'>
+                            <button type='submit' class='w-100 btn btn-success mt-3'>Add</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+        <!--    FINE    -->
+</body>
