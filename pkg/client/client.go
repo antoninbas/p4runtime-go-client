@@ -4,10 +4,15 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
+	"time"
+	
+	//log "github.com/sirupsen/logrus"
+	//code "google.golang.org/genproto/googleapis/rpc/code"
 
-	log "github.com/sirupsen/logrus"
-	code "google.golang.org/genproto/googleapis/rpc/code"
-
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/connectivity"
+	
 	p4_config_v1 "github.com/p4lang/p4runtime/go/p4/config/v1"
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 )
@@ -68,22 +73,52 @@ func NewClientForRole(
 	}
 }
 
+//Getter method to retrieve the device id
+func (c *Client) GetDeviceId() uint64{	
+	return c.deviceID	
+}
+
 func (c *Client) Run(
-	stopCh <-chan struct{},
+	//stopCh <-chan struct{},
+	ct context.Context,
+	cc *grpc.ClientConn,
 	arbitrationCh chan<- bool,
 	messageCh chan<- *p4_v1.StreamMessageResponse, // all other stream messages besides arbitration
 ) error {
 	// we use an empty Context which is never cancelled and has no
 	// deadline. We will close the stream by calling CloseSend when the
 	// caller closes the stopCh channel.
-	stream, err := c.StreamChannel(context.Background())
+	
+	//stream, err := c.StreamChannel(context.Background())
+	
+	ctx, cancel := context.WithCancel(ct)	
+	stream, err := c.StreamChannel(ctx)
 	if err != nil {
 		return fmt.Errorf("cannot establish stream: %v", err)
 	}
 
 	defer stream.CloseSend()
 
-	connStatusCh := make(chan error)
+	//connStatusCh := make(chan error)
+	go func() {
+		if !cc.WaitForStateChange(ctx, connectivity.Ready) {
+			return
+		}
+		log.Println("Switch disconnected")
+		for {
+			time.Sleep(time.Second * 5)
+			if cc.GetState() == connectivity.Ready {
+				log.Println("Reconnected")
+				// stopping running goroutine
+				cancel()
+				// restarting switch
+				go c.Run(ct, cc, arbitrationCh, messageCh)
+				return
+			}
+			cc.Connect()
+			log.Println("Trying to reconnect")
+		}
+	}()
 
 	go func() {
 		for {
@@ -94,7 +129,7 @@ func (c *Client) Run(
 			}
 			if err != nil {
 				log.Errorf("Failed to receive a stream message : %v", err)
-				connStatusCh <- err
+				//connStatusCh <- err
 				return
 			}
 			arbitration, ok := in.Update.(*p4_v1.StreamMessageResponse_Arbitration)
@@ -126,10 +161,12 @@ func (c *Client) Run(
 		select {
 		case m := <-c.streamSendCh:
 			stream.Send(m)
-		case <-stopCh:
+		case <-ctx.Done():
 			return nil
+		/*
 		case err := <-connStatusCh:
 			return err
+		*/
 		}
 	}
 }
