@@ -4,11 +4,12 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
 
@@ -94,20 +95,20 @@ func main() {
 
 	if binPath != "" {
 		var err error
-		if binBytes, err = ioutil.ReadFile(binPath); err != nil {
+		if binBytes, err = os.ReadFile(binPath); err != nil {
 			log.Fatalf("Error when reading binary config from '%s': %v", binPath, err)
 		}
 	}
 
 	if p4infoPath != "" {
 		var err error
-		if p4infoBytes, err = ioutil.ReadFile(p4infoPath); err != nil {
+		if p4infoBytes, err = os.ReadFile(p4infoPath); err != nil {
 			log.Fatalf("Error when reading P4Info text file '%s': %v", p4infoPath, err)
 		}
 	}
 
 	log.Infof("Connecting to server at %s", addr)
-	conn, err := grpc.Dial(addr, grpc.WithInsecure())
+	conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Cannot connect to server: %v", err)
 	}
