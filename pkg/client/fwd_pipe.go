@@ -3,11 +3,9 @@ package client
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 
-	//nolint:staticcheck // SA1019 To be resolved later
-	//lint:ignore SA1019 This line added for support golint version of VSC
-	"github.com/golang/protobuf/proto"
+	"google.golang.org/protobuf/encoding/prototext"
 
 	p4_config_v1 "github.com/p4lang/p4runtime/go/p4/config/v1"
 	p4_v1 "github.com/p4lang/p4runtime/go/p4/v1"
@@ -21,7 +19,7 @@ type FwdPipeConfig struct {
 
 func (c *Client) SetFwdPipeFromBytesWithAction(ctx context.Context, binBytes, p4infoBytes []byte, cookie uint64, action p4_v1.SetForwardingPipelineConfigRequest_Action) (*FwdPipeConfig, error) {
 	p4Info := &p4_config_v1.P4Info{}
-	if err := proto.UnmarshalText(string(p4infoBytes), p4Info); err != nil {
+	if err := prototext.Unmarshal(p4infoBytes, p4Info); err != nil {
 		return nil, fmt.Errorf("failed to decode P4Info Protobuf message: %v", err)
 	}
 	config := &p4_v1.ForwardingPipelineConfig{
@@ -72,11 +70,11 @@ func (c *Client) CommitFwdPipe(ctx context.Context) (*p4_v1.SetForwardingPipelin
 }
 
 func (c *Client) SetFwdPipe(ctx context.Context, binPath string, p4infoPath string, cookie uint64) (*FwdPipeConfig, error) {
-	binBytes, err := ioutil.ReadFile(binPath)
+	binBytes, err := os.ReadFile(binPath)
 	if err != nil {
 		return nil, fmt.Errorf("error when reading binary device config: %v", err)
 	}
-	p4infoBytes, err := ioutil.ReadFile(p4infoPath)
+	p4infoBytes, err := os.ReadFile(p4infoPath)
 	if err != nil {
 		return nil, fmt.Errorf("error when reading P4Info text file: %v", err)
 	}
@@ -95,7 +93,9 @@ const (
 // GetFwdPipe retrieves the current pipeline config used in the remote switch.
 //
 // responseType is oneof:
-//  GetFwdPipeAll, GetFwdPipeCookieOnly, GetFwdPipeP4InfoAndCookie, GetFwdPipeDeviceConfigAndCookie
+//
+//	GetFwdPipeAll, GetFwdPipeCookieOnly, GetFwdPipeP4InfoAndCookie, GetFwdPipeDeviceConfigAndCookie
+//
 // See https://p4.org/p4runtime/spec/v1.3.0/P4Runtime-Spec.html#sec-getforwardingpipelineconfig-rpc
 func (c *Client) GetFwdPipe(ctx context.Context, responseType GetFwdPipeResponseType) (*FwdPipeConfig, error) {
 	req := &p4_v1.GetForwardingPipelineConfigRequest{

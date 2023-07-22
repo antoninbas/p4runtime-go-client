@@ -1,13 +1,22 @@
 module github.com/antoninbas/p4runtime-go-client
 
-go 1.15
+go 1.20
 
 require (
-	github.com/golang/protobuf v1.4.3
 	github.com/p4lang/p4runtime v1.4.0-rc.5
-	github.com/sirupsen/logrus v1.5.0
-	github.com/stretchr/testify v1.2.2
-	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/grpc v1.32.0
+	github.com/sirupsen/logrus v1.9.3
+	github.com/stretchr/testify v1.8.4
+	google.golang.org/genproto v0.0.0-20230410155749-daa745c078e1
+	google.golang.org/grpc v1.56.1
+	google.golang.org/protobuf v1.31.0
+)
+
+require (
+	github.com/davecgh/go-spew v1.1.1 // indirect
+	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+	golang.org/x/net v0.9.0 // indirect
+	golang.org/x/sys v0.7.0 // indirect
+	golang.org/x/text v0.9.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

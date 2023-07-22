@@ -1,5 +1,8 @@
 GO := go
 BINDIR := $(CURDIR)/bin
+GOLANGCI_LINT_VERSION := v1.53.3
+GOLANGCI_LINT_BINDIR  := .golangci-bin
+GOLANGCI_LINT_BIN     := $(GOLANGCI_LINT_BINDIR)/$(GOLANGCI_LINT_VERSION)/golangci-lint
 
 all: bin
 
@@ -26,11 +29,6 @@ wcmp: .bins/go-bindata .bins/p4c-lite.sh
 bin:
 	GOBIN=$(BINDIR) $(GO) install github.com/antoninbas/p4runtime-go-client/...
 
-clean:
-	rm -rf bin
-	rm -rf .bins
-	rm -rf .golangci-bin
-
 .PHONY: fmt
 fmt:
 	$(GO) fmt github.com/antoninbas/p4runtime-go-client/...
@@ -45,16 +43,23 @@ check:
 	$(GO) test -tags=integration github.com/antoninbas/p4runtime-go-client/...
 
 # code linting
-.golangci-bin:
+$(GOLANGCI_LINT_BIN):
 	@echo "===> Installing Golangci-lint <==="
-	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $@ v1.45.2
+	@rm -rf $(GOLANGCI_LINT_BINDIR)/* # delete old versions
+	@curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOLANGCI_LINT_BINDIR)/$(GOLANGCI_LINT_VERSION) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: golangci
-golangci: .golangci-bin
+golangci: $(GOLANGCI_LINT_BIN)
 	@echo "===> Running golangci <==="
-	@GOOS=linux .golangci-bin/golangci-lint run -c .golangci.yml
+	@GOOS=linux $(GOLANGCI_LINT_BIN) run -c .golangci.yml
 
 .PHONY: golangci-fix
-golangci-fix: .golangci-bin
+golangci-fix: $(GOLANGCI_LINT_BIN)
 	@echo "===> Running golangci-fix <==="
-	@GOOS=linux .golangci-bin/golangci-lint run -c .golangci.yml --fix
+	@GOOS=linux $(GOLANGCI_LINT_BIN) run -c .golangci.yml --fix
+
+.PHONY: clean
+clean:
+	rm -rf $(BINDIR)
+	rm -rf .bins
+	rm -rf $(GOLANGCI_LINT_BINDIR)
